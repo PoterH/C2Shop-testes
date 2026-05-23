@@ -34,6 +34,31 @@ export const CATEGORIES = [
 
 export const products: Product[] = [
   {
+    id: 'produto_teste_1_real',
+    slug: 'produto-teste-1-real',
+    name: 'Produto de Teste (R$ 1,00)',
+    category: 'Escritório e Produtividade',
+    compatibility: 'Windows e macOS',
+    version: '1.0',
+    description: 'Produto de teste de R$ 1,00 para validação de pagamentos.',
+    longDescription: 'Este produto foi criado exclusivamente para realizar testes rápidos de pagamento no cartão de crédito ou Pix, custando apenas R$ 1,00.',
+    price: 1.00,
+    originalPrice: 10.00,
+    checkoutUrl: '',
+    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=300&auto=format&fit=crop',
+    features: [
+      'Produto de Teste Oficial',
+      'Validação de checkout seguro',
+      'Liberação automática de link fictício no e-mail'
+    ],
+    requirements: {
+      os: 'Qualquer sistema operacional',
+      cpu: 'Qualquer processador',
+      ram: 'Qualquer quantidade',
+      storage: 'Leve'
+    }
+  },
+  {
     id: 'autocad_2027_win',
     slug: 'autocad-2027-windows',
     name: 'AutoCAD 2027 (Windows)',
