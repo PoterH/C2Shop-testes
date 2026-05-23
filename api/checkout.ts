@@ -1,0 +1,185 @@
+import { products } from '../src/data/products';
+import { getEfiInstance, isMockMode } from './_efi';
+import { sendConfirmationEmail } from './_email';
+
+export default async function handler(req: any, res: any) {
+  // Configuração de CORS para desenvolvimento local
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  const { productSlug, buyer, paymentMethod, paymentToken, installments, billingAddress } = req.body;
+
+  if (!productSlug || !buyer || !paymentMethod) {
+    return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes' });
+  }
+
+  // Busca o produto no banco de dados para segurança de preço
+  const product = products.find(p => p.slug === productSlug);
+  if (!product) {
+    return res.status(404).json({ error: 'Produto não encontrado' });
+  }
+
+  const priceStr = product.price.toFixed(2);
+  const valueCentavos = Math.round(product.price * 100);
+
+  // MODO MOCK AUTOMÁTICO SE CREDENCIAIS NÃO ESTIVEREM CONFIGURADAS
+  if (isMockMode()) {
+    console.warn('Efí SDK: Iniciando em modo MOCK. Nenhuma credencial de produção/sandbox configurada no .env.');
+    if (paymentMethod === 'pix') {
+      const mockTxid = 'mock_' + Math.random().toString(36).substring(2, 15);
+      return res.status(200).json({
+        success: true,
+        paymentMethod: 'pix',
+        txid: mockTxid,
+        // QR Code de exemplo contendo o texto para teste
+        copyPaste: `00020101021226870014br.gov.bcb.pix2565mock.sejaefi.com.br/v2/cobv/${mockTxid}5204000053039865406${priceStr}5802BR5910C2Tech6009Recife62070503***6304`,
+        // PNG de 1x1 pixel ou imagem genérica para não estourar a tela do cliente
+        qrCodeBase64: 'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4wYCDw0xTzhDHgAAAAd0SU1FB+MGAg8NMSc4Qx4AAAD/SURBVHgB7dHBDcMgDETRpyt0g26QbdINukF36AalI2QJ4VCR/o3vVvgh8BkbY0zT1Fp771lr7z1r7b1nrb33rLX3nrX23rPW3nvW2nvPWnvvWWvvPWvtvWervfes/fdXKaXW2ntPa+29p7X23tNae+9prb33tNbee1pr7z2ttfceL09r7T0e/pRSaq2997TW3nta+zNrnP0k5xzH4e0/rO139vs7lVIqpdRae6+11t5rrbX3Wmvtvddae6+11t5rrbX3Wmvtvddae6+11t5rrbX3Wmvtvddae6+19t7j6W2t7cfs5zP7Mfv9nX7MfpJSaq2997TW3ntaa+89rbX3ntbee7w8APgDJzEwN54m2l0AAAAASUVORK5CYII=',
+        mock: true,
+      });
+    } else {
+      // Dispara o e-mail de teste em modo Mock para facilitar validações locais
+      try {
+        await sendConfirmationEmail({
+          buyerName: buyer.name,
+          buyerEmail: buyer.email,
+          productSlug: product.slug,
+          productName: product.name,
+          productPrice: product.price,
+          orderId: 'mock_card_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+          paymentMethod: 'credit_card'
+        });
+      } catch (err) {
+        console.error('Erro ao enviar e-mail mockado de cartão:', err);
+      }
+
+      return res.status(200).json({
+        success: true,
+        paymentMethod: 'credit_card',
+        status: 'approved',
+        mock: true,
+      });
+    }
+  }
+
+  try {
+    const efi = getEfiInstance();
+    if (!efi) {
+      throw new Error('Instância Efí não inicializada');
+    }
+
+    if (paymentMethod === 'pix') {
+      const chargeBody = {
+        calendario: {
+          expiracao: 3600 // 1 hora
+        },
+        devedor: {
+          cpf: buyer.cpf.replace(/\D/g, ''),
+          nome: buyer.name
+        },
+        valor: {
+          original: priceStr
+        },
+        chave: process.env.EFI_PIX_KEY || '',
+        solicitacaoPagador: `Software ${product.name} - C2Tech`
+      };
+
+      const chargeRes = await efi.pixCreateImmediateCharge({}, chargeBody);
+      const locId = chargeRes.loc?.id;
+      const txid = chargeRes.txid;
+
+      if (!locId) {
+        throw new Error('Falha ao gerar localização da cobrança Pix');
+      }
+
+      const qrCodeRes = await efi.pixGenerateQRCode({ id: locId });
+
+      return res.status(200).json({
+        success: true,
+        paymentMethod: 'pix',
+        txid: txid,
+        copyPaste: qrCodeRes.qrcode,
+        qrCodeBase64: qrCodeRes.imagemQrcode,
+      });
+    } else if (paymentMethod === 'credit_card') {
+      const items = [{
+        name: `Licença ${product.name}`,
+        value: valueCentavos,
+        amount: 1
+      }];
+
+      const chargeRes = await efi.createCharge({}, { items });
+      const chargeId = chargeRes.data?.charge_id;
+
+      if (!chargeId) {
+        throw new Error('Falha ao registrar cobrança no Efí Bank');
+      }
+
+      const paymentData = {
+        payment: {
+          credit_card: {
+            installments: Number(installments) || 1,
+            payment_token: paymentToken,
+            billing_address: {
+              street: billingAddress.street,
+              number: billingAddress.number,
+              neighborhood: billingAddress.neighborhood,
+              zipcode: billingAddress.zipcode.replace(/\D/g, ''),
+              city: billingAddress.city,
+              state: billingAddress.state,
+            },
+            customer: {
+              name: buyer.name,
+              cpf: buyer.cpf.replace(/\D/g, ''),
+              email: buyer.email,
+              phone_number: buyer.phone.replace(/\D/g, '')
+            }
+          }
+        }
+      };
+
+      const payRes = await efi.payCharge({ id: chargeId }, paymentData);
+      const status = payRes.data?.status || 'pending';
+
+      // Se a cobrança de cartão for aprovada/confirmada, dispara o e-mail pelo Resend
+      if (status === 'approved' || status === 'paid' || status === 'confirmado') {
+        try {
+          await sendConfirmationEmail({
+            buyerName: buyer.name,
+            buyerEmail: buyer.email,
+            productSlug: product.slug,
+            productName: product.name,
+            productPrice: product.price,
+            orderId: String(chargeId),
+            paymentMethod: 'credit_card'
+          });
+        } catch (err) {
+          console.error('Erro ao enviar e-mail de confirmação de cartão:', err);
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        paymentMethod: 'credit_card',
+        status,
+      });
+    } else {
+      return res.status(400).json({ error: 'Método de pagamento inválido' });
+    }
+  } catch (error: any) {
+    console.error('Erro no processamento do checkout:', error);
+    return res.status(500).json({ 
+      error: 'Erro ao processar o pagamento no Efí Bank', 
+      details: error.message || error 
+    });
+  }
+}
