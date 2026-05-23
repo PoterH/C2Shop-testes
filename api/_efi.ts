@@ -47,5 +47,6 @@ export const getEfiInstance = () => {
     client_secret: client_secret,
     certificate: certPath,
   };
-  return new EfiPay(options);
+  const EfiPayClass = EfiPay as any;
+  return new EfiPayClass(options);
 };

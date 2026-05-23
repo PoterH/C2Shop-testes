@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { getDownloadLink } from './_downloads';
+import { getDownloadLink } from './_downloads.js';
 
 function getResendApiKey() {
   try {

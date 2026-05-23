@@ -1,4 +1,4 @@
-import { getEfiInstance, isMockMode } from './_efi';
+import { getEfiInstance, isMockMode } from './_efi.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');

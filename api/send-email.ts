@@ -1,6 +1,6 @@
-import { products } from './_products';
-import { getEfiInstance, isMockMode } from './_efi';
-import { sendConfirmationEmail } from './_email';
+import { products } from './_products.js';
+import { getEfiInstance, isMockMode } from './_efi.js';
+import { sendConfirmationEmail } from './_email.js';
 
 export default async function handler(req: any, res: any) {
   // Configuração de CORS para desenvolvimento local e chamadas de produção
@@ -23,7 +23,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // Busca o produto correspondente para segurança de preço e informações do e-mail
-  const product = products.find(p => p.slug === productSlug);
+  const product = products.find((p: any) => p.slug === productSlug);
   if (!product) {
     return res.status(404).json({ error: 'Produto não encontrado' });
   }
