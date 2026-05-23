@@ -147,7 +147,7 @@ export default async function handler(req: any, res: any) {
         }
       };
 
-      const payRes = await efi.payCharge({ id: chargeId }, paymentData);
+      const payRes = await efi.definePayMethod({ id: chargeId }, paymentData);
       const status = payRes.data?.status || 'pending';
 
       // Se a cobrança de cartão for aprovada/confirmada, dispara o e-mail pelo Resend
