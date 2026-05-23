@@ -384,6 +384,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
         }
       }
 
+      const deviceId = (window as any).MP_DEVICE_SESSION_ID || (window as any).MP_DEVICE_TOKEN || null;
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -399,6 +401,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
           paymentToken,
           paymentMethodId: brand,
           installments: parseInt(installments, 10),
+          deviceId,
           billingAddress: {
             street,
             number,
