@@ -29,6 +29,8 @@ export default async function handler(req: any, res: any) {
   }
 
   const priceStr = product.price.toFixed(2);
+  const pixPrice = product.price * 0.98;
+  const pixPriceStr = pixPrice.toFixed(2);
   const valueCentavos = Math.round(product.price * 100);
 
   // MODO MOCK AUTOMÁTICO SE CREDENCIAIS NÃO ESTIVEREM CONFIGURADAS
@@ -41,7 +43,7 @@ export default async function handler(req: any, res: any) {
         paymentMethod: 'pix',
         txid: mockTxid,
         // QR Code de exemplo contendo o texto para teste
-        copyPaste: `00020101021226870014br.gov.bcb.pix2565mock.sejaefi.com.br/v2/cobv/${mockTxid}5204000053039865406${priceStr}5802BR5910C2Tech6009Recife62070503***6304`,
+        copyPaste: `00020101021226870014br.gov.bcb.pix2565mock.sejaefi.com.br/v2/cobv/${mockTxid}5204000053039865406${pixPriceStr}5802BR5910C2Tech6009Recife62070503***6304`,
         // PNG de 1x1 pixel ou imagem genérica para não estourar a tela do cliente
         qrCodeBase64: 'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4wYCDw0xTzhDHgAAAAd0SU1FB+MGAg8NMSc4Qx4AAAD/SURBVHgB7dHBDcMgDETRpyt0g26QbdINukF36AalI2QJ4VCR/o3vVvgh8BkbY0zT1Fp771lr7z1r7b1nrb33rLX3nrX23rPW3nvW2nvPWnvvWWvvPWvtvWervfes/fdXKaXW2ntPa+29p7X23tNae+9prb33tNbee1pr7z2ttfceL09r7T0e/pRSaq2997TW3nta+zNrnP0k5xzH4e0/rO139vs7lVIqpdRae6+11t5rrbX3Wmvtvddae6+11t5rrbX3Wmvtvddae6+11t5rrbX3Wmvtvddae6+19t7j6W2t7cfs5zP7Mfv9nX7MfpJSaq2997TW3ntaa+89rbX3ntbee7w8APgDJzEwN54m2l0AAAAASUVORK5CYII=',
         mock: true,
@@ -87,7 +89,7 @@ export default async function handler(req: any, res: any) {
           nome: buyer.name
         },
         valor: {
-          original: priceStr
+          original: pixPriceStr
         },
         chave: process.env.EFI_PIX_KEY || '',
         solicitacaoPagador: `Software ${product.name} - C2Tech`

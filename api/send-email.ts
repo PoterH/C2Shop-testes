@@ -61,7 +61,7 @@ export default async function handler(req: any, res: any) {
       buyerEmail: buyer.email,
       productSlug: product.slug,
       productName: product.name,
-      productPrice: product.price,
+      productPrice: product.price * 0.98,
       orderId: txid,
       paymentMethod: 'pix'
     });
