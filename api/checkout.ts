@@ -1,6 +1,7 @@
 import { products } from './_products.js';
 import { getEfiInstance, isMockMode } from './_efi.js';
 import { sendConfirmationEmail } from './_email.js';
+import { MercadoPagoConfig, Payment } from 'mercadopago';
 
 export default async function handler(req: any, res: any) {
   // Configuração de CORS para desenvolvimento local
@@ -16,7 +17,7 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const { productSlug, buyer, paymentMethod, paymentToken, installments, billingAddress } = req.body;
+  const { productSlug, buyer, paymentMethod, paymentToken, installments, billingAddress, paymentMethodId } = req.body;
 
   if (!productSlug || !buyer || !paymentMethod) {
     return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes' });
@@ -113,47 +114,37 @@ export default async function handler(req: any, res: any) {
         qrCodeBase64: qrCodeRes.imagemQrcode,
       });
     } else if (paymentMethod === 'credit_card') {
-      const items = [{
-        name: `Licença ${product.name}`,
-        value: valueCentavos,
-        amount: 1
-      }];
-
-      const chargeRes = await efi.createCharge({}, { items });
-      const chargeId = chargeRes.data?.charge_id;
-
-      if (!chargeId) {
-        throw new Error('Falha ao registrar cobrança no Efí Bank');
+      const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+      if (!mpAccessToken) {
+        throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurada.');
       }
 
-      const paymentData = {
-        payment: {
-          credit_card: {
-            installments: Number(installments) || 1,
-            payment_token: paymentToken,
-            billing_address: {
-              street: billingAddress.street,
-              number: billingAddress.number,
-              neighborhood: billingAddress.neighborhood,
-              zipcode: billingAddress.zipcode.replace(/\D/g, ''),
-              city: billingAddress.city,
-              state: billingAddress.state,
-            },
-            customer: {
-              name: buyer.name,
-              cpf: buyer.cpf.replace(/\D/g, ''),
-              email: buyer.email,
-              phone_number: buyer.phone.replace(/\D/g, '')
-            }
+      // Inicializa o cliente do Mercado Pago
+      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
+      const payment = new Payment(client);
+
+      const paymentBody = {
+        transaction_amount: Number(product.price),
+        description: `Licença ${product.name} - C2Tech`,
+        payment_method_id: paymentMethodId || 'visa',
+        token: paymentToken,
+        installments: Number(installments) || 1,
+        payer: {
+          email: buyer.email,
+          first_name: buyer.name.split(' ')[0],
+          last_name: buyer.name.split(' ').slice(1).join(' ') || 'Silva',
+          identification: {
+            type: buyer.cpf.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF',
+            number: buyer.cpf.replace(/\D/g, '')
           }
         }
       };
 
-      const payRes = await efi.definePayMethod({ id: chargeId }, paymentData);
-      const status = payRes.data?.status || 'pending';
+      const payRes = await payment.create({ body: paymentBody });
+      const status = payRes.status || 'pending';
 
       // Se a cobrança de cartão for aprovada/confirmada, dispara o e-mail pelo Resend
-      if (status === 'approved' || status === 'paid' || status === 'confirmado') {
+      if (status === 'approved' || status === 'authorized') {
         try {
           await sendConfirmationEmail({
             buyerName: buyer.name,
@@ -161,7 +152,7 @@ export default async function handler(req: any, res: any) {
             productSlug: product.slug,
             productName: product.name,
             productPrice: product.price,
-            orderId: String(chargeId),
+            orderId: String(payRes.id),
             paymentMethod: 'credit_card'
           });
         } catch (err) {
@@ -180,7 +171,7 @@ export default async function handler(req: any, res: any) {
   } catch (error: any) {
     console.error('Erro no processamento do checkout:', error);
     return res.status(500).json({ 
-      error: 'Erro ao processar o pagamento no Efí Bank', 
+      error: 'Erro ao processar o pagamento', 
       details: error.message || error 
     });
   }
