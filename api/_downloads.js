@@ -1,0 +1,30 @@
+export const DOWNLOAD_LINKS = {
+    'revit-2027': 'https://drive.google.com/open?id=1YdxxNNicaiknsAAVaqHMK2ol7tEFldr_',
+    'autocad-2027-windows': 'https://drive.google.com/open?id=1E2tzYel-p9sUbNFJTc69eZx1Cu2Psghk',
+    'autocad-2027-macos': 'https://drive.google.com/open?id=1DFoAHtSpBqcu8bS1UZDnEUr81Zone7Dr',
+    'inventor-professional-2027': 'https://drive.google.com/open?id=1iczqn4y2-Tvdx4Vp9WjhAslvqM4mM9FK',
+    'navisworks-manage-2027': 'https://drive.google.com/open?id=1l4jt7SCth0Pa9niPHAN0NUgvvxw7t1tD',
+    'adobe-photoshop-2026': 'https://drive.google.com/open?id=1_idfhrAAsyUoRd8US1rISgzE-P9C9wxI',
+    'coreldraw-graphics-suite-2026-macos': 'https://drive.google.com/open?id=1TQFGgnqH3v1kylnnb2GYynnHCfBf-9kF',
+    'promob-plus-professional-2025': 'https://drive.google.com/open?id=1KHkh6hTxa_630LoQwoH41EvRNO_WJWhP',
+    'archicad-29-bra': 'https://drive.google.com/open?id=1TnHlZ7orSkt2yYlIEiJ9aKdJEPA2TKhY',
+    'cypecad-2026': 'https://drive.google.com/open?id=18d9KGJpC5iwv52Td3mGUNtaYZ5hBIl3l',
+    'office-2024-professional-plus': 'https://drive.google.com/open?id=171D-xOBKQyWelQ_qCrHckvliwVsQgrgr',
+    'eberick-builder-2025': 'https://drive.google.com/open?id=10KvPsuZ4coEQ6RIirgdVnvr4wewhNrrS',
+    'promob-plus-enterprise-2024': 'https://drive.google.com/open?id=1hUueGl_fSGuGTotnA0VXC_4cobtByGMO',
+    'sketchup-pro-2026-macos': 'https://drive.google.com/open?id=1gd1UbFonFAHG3bemYyrxP4byrlHXZhQD',
+    'solidworks-2026': 'https://drive.google.com/open?id=1-azfzGADXgZqPtbxVoX25k-bWdvtKngY',
+    'coreldraw-graphics-suite-2026': 'https://drive.google.com/open?id=1DLpMjwtqOTdVt6yhoheK3q6h0TUMRKH5',
+    'office-2024-professional-mac': 'https://drive.google.com/open?id=1XIJGZW7t8JLoe_3_p_Cpz0i8E1GLoJOn',
+    'sketchup-pro-2026-windows': 'https://drive.google.com/open?id=1RV0E_xZZLEnwIM1YAt14AsfiPwwGEAEF',
+    'zwcad-professional-2026': 'https://drive.google.com/open?id=1V_BpLCTqEk65dOo17jVomqhtbWQtcBXP',
+    'sisdea-2025': 'https://drive.google.com/open?id=1KsGcNauybZOC-EaP_gllkXNmbwq_qqy1',
+    'vray-7-windows': 'https://drive.google.com/drive/folders/1oU7RB6E5oFpYYK0AyQnEUPci86s8KU6Z?usp=sharing',
+    'chaos-enscape-windows': 'https://drive.google.com/drive/folders/1FRBop92N38AL7oZFf_F7ONMN1oHHxQM3?usp=drive_link',
+    'tekla-structures-2025': 'https://drive.google.com/drive/folders/1WJ1RpvDdJfyXreqqZZTL0kW2WS415z3J?usp=drive_link',
+    'rhinoceros-8': 'https://drive.google.com/drive/folders/12KF14NgmBt85gFu31vfbg5gVWcTpNSZu?usp=drive_link',
+    'exocad-dentalcad-31-rijeka': 'https://drive.google.com/drive/folders/1dHqvXECpoZPkFxgjjqZRBiB6WgfKLBY1?usp=drive_link',
+};
+export function getDownloadLink(slug) {
+    return DOWNLOAD_LINKS[slug] || `https://wa.me/5581997349300?text=Olá,%20acabei%20de%20comprar%20um%20software%20e%20gostaria%20de%20receber%20o%20link%20de%20download.`;
+}

@@ -34,17 +34,17 @@ export const CATEGORIES = [
 
 export const products: Product[] = [
   {
-    id: 'produto_teste_1_real',
-    slug: 'produto-teste-1-real',
-    name: 'Produto de Teste (R$ 1,00)',
+    id: 'produto_teste_5_reais',
+    slug: 'produto-teste-5-reais',
+    name: 'Produto de Teste (R$ 5,00)',
     category: 'Escritório e Produtividade',
     compatibility: 'Windows e macOS',
     version: '1.0',
-    description: 'Produto de teste de R$ 1,00 para validação de pagamentos.',
-    longDescription: 'Este produto foi criado exclusivamente para realizar testes rápidos de pagamento no cartão de crédito ou Pix, custando apenas R$ 1,00.',
-    price: 1.00,
+    description: 'Produto de teste de R$ 5,00 para validação de pagamentos.',
+    longDescription: 'Este produto foi criado exclusivamente para realizar testes rápidos de pagamento no cartão de crédito ou Pix, custando apenas R$ 5,00.',
+    price: 5.00,
     originalPrice: 10.00,
-    checkoutUrl: '',
+    checkoutUrl: 'https://pay.cakto.com.br/4c8eebm_897149',
     imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=300&auto=format&fit=crop',
     features: [
       'Produto de Teste Oficial',

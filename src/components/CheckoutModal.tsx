@@ -3,15 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   Lock, 
-  CreditCard, 
   Copy, 
   Loader2, 
   User, 
   Mail, 
   Phone, 
   FileText, 
-  MapPin, 
-  Calendar, 
   ChevronLeft,
   CheckCircle2,
   AlertTriangle
@@ -42,20 +39,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Form State: Credit Card
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardHolder, setCardHolder] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [installments, setInstallments] = useState('1');
 
-  // Form State: Address (Required for Card by Efí)
-  const [zipcode, setZipcode] = useState('');
-  const [street, setStreet] = useState('');
-  const [number, setNumber] = useState('');
-  const [neighborhood, setNeighborhood] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
 
   // Pix Payment Data from API
   const [pixCopyPaste, setPixCopyPaste] = useState('');
@@ -109,42 +93,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
     }
   };
 
-  const formatZipcode = (val: string) => {
-    const raw = val.replace(/\D/g, '');
-    return raw.replace(/(\d{5})(\d{1,3})$/, '$1-$2');
-  };
 
-  const formatCardNumber = (val: string) => {
-    const raw = val.replace(/\D/g, '');
-    return raw.replace(/(\d{4})(?=\d)/g, '$1 ');
-  };
-
-  const formatCardExpiry = (val: string) => {
-    const raw = val.replace(/\D/g, '');
-    if (raw.length <= 2) return raw;
-    return `${raw.substring(0, 2)}/${raw.substring(2, 4)}`;
-  };
-
-  // ZIP Code Auto-fill
-  const handleZipcodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatZipcode(e.target.value);
-    setZipcode(formatted);
-    const raw = formatted.replace(/\D/g, '');
-    if (raw.length === 8) {
-      try {
-        const response = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
-        const data = await response.json();
-        if (!data.erro) {
-          setStreet(data.logradouro || '');
-          setNeighborhood(data.bairro || '');
-          setCity(data.localidade || '');
-          setState(data.uf || '');
-        }
-      } catch (err) {
-        console.error('Erro ao buscar CEP:', err);
-      }
-    }
-  };
 
   // Step Validations
   const validateInfoStep = () => {
@@ -170,37 +119,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
     return true;
   };
 
-  const validateCardStep = () => {
-    const cleanNum = cardNumber.replace(/\D/g, '');
-    if (cleanNum.length < 13 || cleanNum.length > 19) {
-      setErrorMessage('Número de cartão de crédito inválido.');
-      return false;
-    }
-    if (cardHolder.trim().split(' ').length < 2) {
-      setErrorMessage('Digite o nome impresso no cartão.');
-      return false;
-    }
-    const cleanExpiry = cardExpiry.replace(/\D/g, '');
-    if (cleanExpiry.length !== 4) {
-      setErrorMessage('Data de validade inválida. Use o formato MM/AA.');
-      return false;
-    }
-    const month = parseInt(cleanExpiry.substring(0, 2), 10);
-    if (month < 1 || month > 12) {
-      setErrorMessage('Mês de validade deve ser entre 01 e 12.');
-      return false;
-    }
-    if (cardCvv.length < 3 || cardCvv.length > 4) {
-      setErrorMessage('CVV inválido.');
-      return false;
-    }
-    if (!street || !number || !neighborhood || !city || !state || zipcode.replace(/\D/g, '').length !== 8) {
-      setErrorMessage('Por favor, preencha todos os campos do endereço de cobrança.');
-      return false;
-    }
-    setErrorMessage(null);
-    return true;
-  };
+
 
   // Initiate checkout
   const handleProceedToPayment = () => {
@@ -294,143 +213,40 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   };
 
   // Submit Card Order
+  // Submit Card Order - Redirection to Cakto
   const handleCardCheckout = async () => {
-    if (!validateCardStep()) return;
     setLoading(true);
     setErrorMessage(null);
 
-    const mpPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY || 'mock_payee_code';
-
-    // Get brand or default to visa
-    const cardNumClean = cardNumber.replace(/\D/g, '');
-    let brand = 'visa';
-
-    // Improved local detection fallback (mapping to Mercado Pago identifiers, e.g., 'master' instead of 'mastercard')
-    const getLocalCardBrand = (num: string): string => {
-      if (/^4/.test(num)) return 'visa';
-      if (/^(5[1-5]|2[2-7])/.test(num)) return 'master';
-      if (/^3[47]/.test(num)) return 'amex';
-      if (/^(5067|5090|6277|6363|6362|504175|438935|4011|431274|451416|457393|4576|650|651|655)/.test(num)) return 'elo';
-      if (/^(606282|3841)/.test(num)) return 'hipercard';
-      if (/^(30[0-5]|309|36|38|39)/.test(num)) return 'diners';
-      if (/^(6042|6043|6044)/.test(num)) return 'cabal';
-      return 'visa';
-    };
-
-    brand = getLocalCardBrand(cardNumClean);
-
-    // Try to resolve exact payment method ID from Mercado Pago API if public key is available
-    if (mpPublicKey && mpPublicKey !== 'mock_payee_code' && cardNumClean.length >= 6) {
-      try {
-        const bin = cardNumClean.substring(0, 6);
-        const searchRes = await fetch(`https://api.mercadopago.com/v1/payment_methods/search?public_key=${mpPublicKey}&bins=${bin}`);
-        if (searchRes.ok) {
-          const searchData = await searchRes.json();
-          const matchedMethod = searchData.results?.find((item: any) => item.payment_type_id === 'credit_card');
-          if (matchedMethod && matchedMethod.id) {
-            brand = matchedMethod.id;
-            console.log('Resolvida bandeira pelo Mercado Pago:', brand);
-          }
-        }
-      } catch (err) {
-        console.warn('Erro ao consultar bandeira na API do Mercado Pago:', err);
-      }
-    }
-
     try {
-      let paymentToken = 'mock_token_cc_' + Math.random().toString(36).substring(2, 15);
-      
-      // Attempt actual tokenization if mpPublicKey is available and not a mock value
-      if (mpPublicKey && mpPublicKey !== 'mock_payee_code') {
-        try {
-          const cleanExpiry = cardExpiry.replace(/\D/g, '');
-          const month = cleanExpiry.substring(0, 2);
-          const year = '20' + cleanExpiry.substring(2, 4);
-          const docNumber = cpfCnpj.replace(/\D/g, '');
-          const docType = docNumber.length > 11 ? 'CNPJ' : 'CPF';
-
-          const tokenRes = await fetch(`https://api.mercadopago.com/v1/card_tokens?public_key=${mpPublicKey}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              card_number: cardNumClean,
-              expiration_month: parseInt(month, 10),
-              expiration_year: parseInt(year, 10),
-              security_code: cardCvv,
-              cardholder: {
-                name: cardHolder,
-                identification: {
-                  type: docType,
-                  number: docNumber
-                }
-              }
-            })
-          });
-
-          const tokenResult = await tokenRes.json();
-          if (!tokenRes.ok || !tokenResult.id) {
-            const errMsg = tokenResult.cause?.[0]?.description || tokenResult.message || 'Dados de cartão inválidos.';
-            throw new Error(errMsg);
-          }
-
-          paymentToken = tokenResult.id;
-        } catch (tokErr: any) {
-          console.warn('Falha na tokenização Mercado Pago. Prosseguindo com fallback de tokenização:', tokErr);
-          if (mpPublicKey && mpPublicKey !== 'mock_payee_code') {
-            throw new Error(tokErr?.message || 'Os dados do cartão de crédito são inválidos ou recusados pelo Mercado Pago para geração do token seguro.');
-          }
-        }
-      }
-
-      const deviceId = (window as any).MP_DEVICE_SESSION_ID || (window as any).MP_DEVICE_TOKEN || null;
-
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productSlug: product.slug,
-          buyer: {
-            name: fullName,
-            email: email,
-            cpf: cpfCnpj,
-            phone: phone
-          },
-          paymentMethod: 'credit_card',
-          paymentToken,
-          paymentMethodId: brand,
-          installments: parseInt(installments, 10),
-          deviceId,
-          billingAddress: {
-            street,
-            number,
-            neighborhood,
-            zipcode,
-            city,
-            state
-          }
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Erro ao processar pagamento por cartão.');
-      }
-
-      if (data.status === 'approved' || data.status === 'paid' || data.status === 'confirmado') {
+      if (!product.checkoutUrl) {
+        // Redirecionamento mock de testes se não houver URL cadastrada (ex: no produto de R$ 1,00)
+        console.warn('Nenhuma checkoutUrl configurada para este produto. Redirecionando para a tela de sucesso para fins de teste local.');
         setCurrentStep('success');
         setTimeout(() => {
           onClose();
           navigate('/obrigado');
         }, 3000);
-      } else {
-        setErrorMessage(`Pagamento não aprovado. Status: ${data.status || 'Pendente'}. Por favor, verifique os dados do cartão.`);
+        return;
       }
+
+      // Limpa os dados de CPF/CNPJ e Telefone para envio na URL
+      const cleanCpf = cpfCnpj.replace(/\D/g, '');
+      let cleanPhone = phone.replace(/\D/g, '');
+      // Para o Brasil, a Cakto exige o prefixo +55 na URL do checkout
+      if (cleanPhone.length > 0 && !cleanPhone.startsWith('55')) {
+        cleanPhone = '55' + cleanPhone;
+      }
+      const formattedPhone = '+' + cleanPhone;
+
+      // Constrói a URL do checkout da Cakto pré-preenchido
+      const redirectUrl = `${product.checkoutUrl}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&cpf=${cleanCpf}&phone=${encodeURIComponent(formattedPhone)}`;
+
+      // Redireciona o comprador
+      window.location.href = redirectUrl;
     } catch (err: any) {
-      console.error(err);
-      setErrorMessage(err.message || 'Erro ao processar transação de cartão. Tente novamente.');
-    } finally {
+      console.error('Erro ao redirecionar para o checkout Cakto:', err);
+      setErrorMessage('Erro ao abrir o checkout de cartão. Tente novamente.');
       setLoading(false);
     }
   };
@@ -448,27 +264,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   const formattedPrice = product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const pixDiscountPrice = product.price * 0.98;
   const formattedPixPrice = pixDiscountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const installmentOptions = Array.from({ length: 12 }, (_, i) => {
-    const num = i + 1;
-    if (num === 1) {
-      const value = product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-      return { num, value, label: `1x de ${value}` };
-    }
-    
-    // Taxa de juros padrão de mercado para parcelamento assumido pelo comprador (ex: 2.99% a.m.)
-    const monthlyRate = 0.0299;
-    const factor = (monthlyRate * Math.pow(1 + monthlyRate, num)) / (Math.pow(1 + monthlyRate, num) - 1);
-    const installmentValue = product.price * factor;
-    
-    const valueStr = installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    return { 
-      num, 
-      value: valueStr, 
-      label: `${num}x de ${valueStr}` 
-    };
-  });
 
-  const cardButtonLabel = 'Finalizar Compra';
 
   return (
     <>
@@ -681,162 +477,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                 {/* Credit Card Area */}
                 {paymentMethod === 'card' && (
                   <div className="space-y-4 pt-2">
-                    
-                    {/* Card fields */}
-                    <div className="space-y-3.5">
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Número do Cartão</label>
-                        <div className="relative">
-                          <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <input 
-                            type="text"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                            placeholder="0000 0000 0000 0000"
-                            maxLength={19}
-                            className="w-full pl-10 pr-4 py-3 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Nome do Titular (Como no cartão)</label>
-                        <input 
-                          type="text"
-                          value={cardHolder}
-                          onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                          placeholder="Ex: JOÃO S SANTOS"
-                          className="w-full px-4 py-3 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Validade</label>
-                          <div className="relative">
-                            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input 
-                              type="text"
-                              value={cardExpiry}
-                              onChange={(e) => setCardExpiry(formatCardExpiry(e.target.value))}
-                              placeholder="MM/AA"
-                              maxLength={5}
-                              className="w-full pl-10 pr-4 py-3 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">CVV</label>
-                          <div className="relative">
-                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input 
-                              type="password"
-                              value={cardCvv}
-                              onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
-                              placeholder="123"
-                              maxLength={4}
-                              className="w-full pl-10 pr-4 py-3 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Installments */}
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Parcelamento</label>
-                        <select
-                          value={installments}
-                          onChange={(e) => setInstallments(e.target.value)}
-                          className="w-full px-4 py-3 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm bg-white transition-all"
-                        >
-                          {installmentOptions.map((opt) => (
-                            <option key={opt.num} value={opt.num}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Address Block (Required by Efí card API to prevent fraud) */}
-                    <div className="border-t border-slate-100 pt-4 mt-2 space-y-3.5">
-                      <h5 className="text-xs font-bold text-slate-800 flex items-center">
-                        <MapPin className="w-4 h-4 text-slate-500 mr-1.5 shrink-0" />
-                        Endereço de Cobrança
-                      </h5>
-
-                      <div className="grid grid-cols-3 gap-3.5">
-                        <div className="space-y-1 col-span-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">CEP</label>
-                          <input 
-                            type="text"
-                            value={zipcode}
-                            onChange={handleZipcodeChange}
-                            placeholder="00000-000"
-                            maxLength={9}
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-xs transition-all"
-                          />
-                        </div>
-
-                        <div className="space-y-1 col-span-2">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rua / Logradouro</label>
-                          <input 
-                            type="text"
-                            value={street}
-                            onChange={(e) => setStreet(e.target.value)}
-                            placeholder="Rua..."
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-xs transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-4 gap-3.5">
-                        <div className="space-y-1 col-span-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Número</label>
-                          <input 
-                            type="text"
-                            value={number}
-                            onChange={(e) => setNumber(e.target.value)}
-                            placeholder="123"
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-xs transition-all"
-                          />
-                        </div>
-
-                        <div className="space-y-1 col-span-2">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bairro</label>
-                          <input 
-                            type="text"
-                            value={neighborhood}
-                            onChange={(e) => setNeighborhood(e.target.value)}
-                            placeholder="Centro"
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-xs transition-all"
-                          />
-                        </div>
-
-                        <div className="space-y-1 col-span-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">UF</label>
-                          <input 
-                            type="text"
-                            value={state}
-                            onChange={(e) => setState(e.target.value.toUpperCase())}
-                            placeholder="PE"
-                            maxLength={2}
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-xs text-center transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cidade</label>
-                        <input 
-                          type="text"
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          placeholder="Recife"
-                          className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-xs transition-all"
-                        />
-                      </div>
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 text-xs text-slate-700 leading-relaxed space-y-2">
+                      <p className="font-bold text-slate-800 flex items-center">
+                        🔒 Redirecionamento Criptografado Seguro
+                      </p>
+                      <p>
+                        Para sua total segurança, o pagamento com cartão de crédito é processado no ambiente oficial da <strong>Cakto</strong> (nossa parceira de pagamentos).
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        * Seus dados preenchidos serão transmitidos de forma segura para agilizar o preenchimento na tela de pagamento.
+                      </p>
                     </div>
 
                     <button
@@ -847,10 +497,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Processando Cartão Seguro...</span>
+                          <span>Redirecionando...</span>
                         </>
                       ) : (
-                        <span>{cardButtonLabel}</span>
+                        <span>Finalizar Compra</span>
                       )}
                     </button>
                   </div>
