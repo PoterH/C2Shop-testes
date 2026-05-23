@@ -17,8 +17,6 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import type { Product } from '../data/products';
-// @ts-ignore
-import EfiPay from 'payment-token-efi';
 
 interface CheckoutModalProps {
   product: Product;
@@ -301,48 +299,58 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
     setLoading(true);
     setErrorMessage(null);
 
-    const payeeCode = import.meta.env.VITE_EFI_ACCOUNT_IDENTIFIER || 'mock_payee_code';
-    const isSandbox = import.meta.env.VITE_EFI_ENVIRONMENT !== 'production';
+    const mpPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY || 'mock_payee_code';
+
+    // Get brand or default to visa
+    const cardNumClean = cardNumber.replace(/\D/g, '');
+    let brand = 'visa';
+    if (cardNumClean.startsWith('5')) brand = 'mastercard';
+    else if (cardNumClean.startsWith('3')) brand = 'amex';
+    else if (cardNumClean.startsWith('6')) brand = 'elo';
 
     try {
       let paymentToken = 'mock_token_cc_' + Math.random().toString(36).substring(2, 15);
       
-      // Attempt actual tokenization if payeeCode is available and not a mock value
-      if (payeeCode && payeeCode !== 'mock_payee_code') {
+      // Attempt actual tokenization if mpPublicKey is available and not a mock value
+      if (mpPublicKey && mpPublicKey !== 'mock_payee_code') {
         try {
           const cleanExpiry = cardExpiry.replace(/\D/g, '');
           const month = cleanExpiry.substring(0, 2);
           const year = '20' + cleanExpiry.substring(2, 4);
+          const docNumber = cpfCnpj.replace(/\D/g, '');
+          const docType = docNumber.length > 11 ? 'CNPJ' : 'CPF';
 
-          // Get brand or default to visa
-          const cardNumClean = cardNumber.replace(/\D/g, '');
-          let brand = 'visa';
-          if (cardNumClean.startsWith('5')) brand = 'mastercard';
-          else if (cardNumClean.startsWith('3')) brand = 'amex';
-          else if (cardNumClean.startsWith('6')) brand = 'elo';
-
-          const tokenResult = (await EfiPay.CreditCard
-            .setAccount(payeeCode)
-            .setEnvironment(isSandbox ? 'sandbox' : 'production')
-            .setCreditCardData({
-              brand,
-              number: cardNumClean,
-              cvv: cardCvv,
-              expirationMonth: month,
-              expirationYear: year,
-              holderName: cardHolder,
-              holderDocument: cpfCnpj.replace(/\D/g, ''),
-              reuse: false,
+          const tokenRes = await fetch(`https://api.mercadopago.com/v1/card_tokens?public_key=${mpPublicKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              card_number: cardNumClean,
+              expiration_month: parseInt(month, 10),
+              expiration_year: parseInt(year, 10),
+              security_code: cardCvv,
+              cardholder: {
+                name: cardHolder,
+                identification: {
+                  type: docType,
+                  number: docNumber
+                }
+              }
             })
-            .getPaymentToken()) as any;
+          });
 
-          if (tokenResult && tokenResult.payment_token) {
-            paymentToken = tokenResult.payment_token;
+          const tokenResult = await tokenRes.json();
+          if (!tokenRes.ok || !tokenResult.id) {
+            const errMsg = tokenResult.cause?.[0]?.description || tokenResult.message || 'Dados de cartão inválidos.';
+            throw new Error(errMsg);
           }
+
+          paymentToken = tokenResult.id;
         } catch (tokErr: any) {
-          console.warn('Falha na tokenização Efí. Prosseguindo com fallback de tokenização:', tokErr);
-          if (payeeCode && payeeCode !== 'mock_payee_code') {
-            throw new Error(tokErr?.error_description || tokErr?.message || 'Os dados do cartão de crédito são inválidos ou recusados pela Efí para geração do token seguro.');
+          console.warn('Falha na tokenização Mercado Pago. Prosseguindo com fallback de tokenização:', tokErr);
+          if (mpPublicKey && mpPublicKey !== 'mock_payee_code') {
+            throw new Error(tokErr?.message || 'Os dados do cartão de crédito são inválidos ou recusados pelo Mercado Pago para geração do token seguro.');
           }
         }
       }
@@ -360,6 +368,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
           },
           paymentMethod: 'credit_card',
           paymentToken,
+          paymentMethodId: brand,
           installments: parseInt(installments, 10),
           billingAddress: {
             street,
