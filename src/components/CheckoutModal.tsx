@@ -407,9 +407,32 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   const formattedPrice = product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const installmentOptions = Array.from({ length: 12 }, (_, i) => {
     const num = i + 1;
-    const value = (product.price / num).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    return { num, value, label: `${num}x de ${value} (Sem Juros)` };
+    if (num === 1) {
+      const value = product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      return { num, value, label: `1x de ${value} (Sem Juros)` };
+    }
+    
+    // Taxa de juros padrão de mercado para parcelamento assumido pelo comprador (ex: 2.99% a.m.)
+    const monthlyRate = 0.0299;
+    const factor = (monthlyRate * Math.pow(1 + monthlyRate, num)) / (Math.pow(1 + monthlyRate, num) - 1);
+    const installmentValue = product.price * factor;
+    const total = installmentValue * num;
+    
+    const valueStr = installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const totalStr = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return { 
+      num, 
+      value: valueStr, 
+      label: `${num}x de ${valueStr} (Total: ${totalStr})` 
+    };
   });
+
+  const selectedInstallmentObj = installmentOptions.find(opt => opt.num === parseInt(installments, 10));
+  const cardButtonLabel = selectedInstallmentObj 
+    ? (selectedInstallmentObj.num === 1 
+        ? `Finalizar Compra - ${formattedPrice}` 
+        : `Finalizar Compra - ${selectedInstallmentObj.num}x de ${selectedInstallmentObj.value}`)
+    : `Finalizar Compra - ${formattedPrice}`;
 
   return (
     <>
@@ -791,7 +814,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                           <span>Processando Cartão Seguro...</span>
                         </>
                       ) : (
-                        <span>Finalizar Compra - {formattedPrice}</span>
+                        <span>{cardButtonLabel}</span>
                       )}
                     </button>
                   </div>
