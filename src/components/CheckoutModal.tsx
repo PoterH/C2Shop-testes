@@ -304,9 +304,38 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
     // Get brand or default to visa
     const cardNumClean = cardNumber.replace(/\D/g, '');
     let brand = 'visa';
-    if (cardNumClean.startsWith('5')) brand = 'mastercard';
-    else if (cardNumClean.startsWith('3')) brand = 'amex';
-    else if (cardNumClean.startsWith('6')) brand = 'elo';
+
+    // Improved local detection fallback (mapping to Mercado Pago identifiers, e.g., 'master' instead of 'mastercard')
+    const getLocalCardBrand = (num: string): string => {
+      if (/^4/.test(num)) return 'visa';
+      if (/^(5[1-5]|2[2-7])/.test(num)) return 'master';
+      if (/^3[47]/.test(num)) return 'amex';
+      if (/^(5067|5090|6277|6363|6362|504175|438935|4011|431274|451416|457393|4576|650|651|655)/.test(num)) return 'elo';
+      if (/^(606282|3841)/.test(num)) return 'hipercard';
+      if (/^(30[0-5]|309|36|38|39)/.test(num)) return 'diners';
+      if (/^(6042|6043|6044)/.test(num)) return 'cabal';
+      return 'visa';
+    };
+
+    brand = getLocalCardBrand(cardNumClean);
+
+    // Try to resolve exact payment method ID from Mercado Pago API if public key is available
+    if (mpPublicKey && mpPublicKey !== 'mock_payee_code' && cardNumClean.length >= 6) {
+      try {
+        const bin = cardNumClean.substring(0, 6);
+        const searchRes = await fetch(`https://api.mercadopago.com/v1/payment_methods/search?public_key=${mpPublicKey}&bins=${bin}`);
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          const matchedMethod = searchData.results?.find((item: any) => item.payment_type_id === 'credit_card');
+          if (matchedMethod && matchedMethod.id) {
+            brand = matchedMethod.id;
+            console.log('Resolvida bandeira pelo Mercado Pago:', brand);
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao consultar bandeira na API do Mercado Pago:', err);
+      }
+    }
 
     try {
       let paymentToken = 'mock_token_cc_' + Math.random().toString(36).substring(2, 15);
