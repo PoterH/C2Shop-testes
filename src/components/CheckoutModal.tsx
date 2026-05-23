@@ -405,6 +405,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
 
   // Pricing math
   const formattedPrice = product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const pixDiscountPrice = product.price * 0.98;
+  const formattedPixPrice = pixDiscountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const installmentOptions = Array.from({ length: 12 }, (_, i) => {
     const num = i + 1;
     if (num === 1) {
@@ -591,7 +593,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
-                    Pix (Aprovação Imediata)
+                    Pix (2% de Desconto)
                   </button>
                   <button
                     type="button"
@@ -605,7 +607,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                     Cartão de Crédito
                   </button>
                 </div>
-
+ 
                 {/* Pix Area */}
                 {paymentMethod === 'pix' && (
                   <div className="space-y-4 pt-2">
@@ -614,10 +616,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                         ⚡ Desconto Exclusivo Pix
                       </p>
                       <p>
-                        Pagamentos via Pix são aprovados imediatamente pelo sistema. A licença e instruções de instalação serão geradas e enviadas no seu e-mail em segundos.
+                        Ganhe 2% de desconto exclusivo pagando via Pix! O pagamento é aprovado imediatamente e o acesso será enviado ao seu e-mail em segundos.
                       </p>
                     </div>
-
+ 
                     <button
                       onClick={handlePixCheckout}
                       disabled={loading}
@@ -629,7 +631,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                           <span>Gerando Pix Seguro...</span>
                         </>
                       ) : (
-                        <span>Gerar QR Code Pix de {formattedPrice}</span>
+                        <span>Gerar QR Code Pix de {formattedPixPrice}</span>
                       )}
                     </button>
                   </div>
