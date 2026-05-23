@@ -341,7 +341,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
           }
         } catch (tokErr: any) {
           console.warn('Falha na tokenização Efí. Prosseguindo com fallback de tokenização:', tokErr);
-          // If we fail on local development or missing library setup, we can continue using mock mode if no backend credentials
+          if (payeeCode && payeeCode !== 'mock_payee_code') {
+            throw new Error(tokErr?.error_description || tokErr?.message || 'Os dados do cartão de crédito são inválidos ou recusados pela Efí para geração do token seguro.');
+          }
         }
       }
 
