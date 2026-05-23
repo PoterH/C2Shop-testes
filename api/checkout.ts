@@ -17,7 +17,7 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const { productSlug, buyer, paymentMethod, paymentToken, installments, billingAddress, paymentMethodId } = req.body;
+  const { productSlug, buyer, paymentMethod, paymentToken, installments, billingAddress, paymentMethodId, deviceId } = req.body;
 
   if (!productSlug || !buyer || !paymentMethod) {
     return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes' });
@@ -123,6 +123,10 @@ export default async function handler(req: any, res: any) {
       const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
       const payment = new Payment(client);
 
+      const cleanPhone = buyer.phone.replace(/\D/g, '');
+      const areaCode = cleanPhone.substring(0, 2) || '11';
+      const phoneNumber = cleanPhone.substring(2) || '999999999';
+
       const paymentBody = {
         transaction_amount: Number(product.price),
         description: `Licença ${product.name} - C2Tech`,
@@ -137,10 +141,41 @@ export default async function handler(req: any, res: any) {
             type: buyer.cpf.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF',
             number: buyer.cpf.replace(/\D/g, '')
           }
+        },
+        additional_info: {
+          items: [
+            {
+              id: product.slug,
+              title: product.name,
+              description: `Licença vitalícia do software ${product.name}`,
+              category_id: 'software',
+              quantity: 1,
+              unit_price: Number(product.price)
+            }
+          ],
+          payer: {
+            first_name: buyer.name.split(' ')[0],
+            last_name: buyer.name.split(' ').slice(1).join(' ') || 'Silva',
+            phone: {
+              area_code: areaCode,
+              number: phoneNumber
+            },
+            address: billingAddress ? {
+              zip_code: billingAddress.zipcode.replace(/\D/g, ''),
+              street_name: billingAddress.street,
+              street_number: Number(billingAddress.number) || 123
+            } : undefined
+          }
         }
       };
 
-      const payRes = await payment.create({ body: paymentBody });
+      const requestOptions = deviceId ? {
+        customHeaders: {
+          'X-Meli-Session-Id': deviceId
+        }
+      } : undefined;
+
+      const payRes = await payment.create({ body: paymentBody, requestOptions });
       const status = payRes.status || 'pending';
 
       // Se a cobrança de cartão for aprovada/confirmada, dispara o e-mail pelo Resend
