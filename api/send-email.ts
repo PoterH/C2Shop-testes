@@ -1,4 +1,4 @@
-import { products } from '../src/data/products';
+import { products } from './_products';
 import { getEfiInstance, isMockMode } from './_efi';
 import { sendConfirmationEmail } from './_email';
 
