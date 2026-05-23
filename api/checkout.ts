@@ -163,16 +163,14 @@ export default async function handler(req: any, res: any) {
             address: billingAddress ? {
               zip_code: billingAddress.zipcode.replace(/\D/g, ''),
               street_name: billingAddress.street,
-              street_number: Number(billingAddress.number) || 123
+              street_number: String(billingAddress.number || '123')
             } : undefined
           }
         }
       };
 
       const requestOptions = deviceId ? {
-        customHeaders: {
-          'X-Meli-Session-Id': deviceId
-        }
+        meliSessionId: deviceId
       } : undefined;
 
       const payRes = await payment.create({ body: paymentBody, requestOptions });
