@@ -126,8 +126,8 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    if (!card || !billingAddress || !installments) {
-      return res.status(400).json({ error: 'Dados do cartão, endereço de cobrança ou parcelamento ausentes' });
+    if (!card || !installments) {
+      return res.status(400).json({ error: 'Dados do cartão ou parcelamento ausentes' });
     }
 
     try {
@@ -139,13 +139,13 @@ export default async function handler(req: any, res: any) {
         phone: buyer.phone,
         ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
         billingAddress: {
-          street: billingAddress.street,
-          number: String(billingAddress.number),
-          complement: billingAddress.complement,
-          neighborhood: billingAddress.neighborhood,
-          zipcode: billingAddress.zipcode,
-          city: billingAddress.city,
-          state: billingAddress.state
+          street: billingAddress?.street || 'Av. Paulista',
+          number: billingAddress?.number ? String(billingAddress.number) : '1000',
+          complement: billingAddress?.complement || '',
+          neighborhood: billingAddress?.neighborhood || 'Bela Vista',
+          zipcode: billingAddress?.zipcode ? billingAddress.zipcode.replace(/\D/g, '') : '01310100',
+          city: billingAddress?.city || 'São Paulo',
+          state: billingAddress?.state || 'SP'
         }
       });
 
