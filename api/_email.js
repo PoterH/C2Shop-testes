@@ -1,116 +1,93 @@
 import fs from 'fs';
 import path from 'path';
 import { getDownloadLink } from './_downloads.js';
-
 function getResendApiKey() {
-  try {
-    const envPath = path.join(process.cwd(), '.env');
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const lines = envContent.split(/\r?\n/);
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('RESEND_API_KEY=')) {
-          const val = trimmed.substring('RESEND_API_KEY='.length);
-          if (val) {
-            const cleanVal = val.replace(/^['"]|['"]$/g, '').trim();
-            if (cleanVal) return cleanVal;
-          }
+    try {
+        const envPath = path.join(process.cwd(), '.env');
+        if (fs.existsSync(envPath)) {
+            const envContent = fs.readFileSync(envPath, 'utf8');
+            const lines = envContent.split(/\r?\n/);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('RESEND_API_KEY=')) {
+                    const val = trimmed.substring('RESEND_API_KEY='.length);
+                    if (val) {
+                        const cleanVal = val.replace(/^['"]|['"]$/g, '').trim();
+                        if (cleanVal)
+                            return cleanVal;
+                    }
+                }
+            }
         }
-      }
     }
-  } catch (err) {
-    console.error('Erro ao ler arquivo .env local:', err);
-  }
-  return process.env.RESEND_API_KEY || '';
+    catch (err) {
+        console.error('Erro ao ler arquivo .env local:', err);
+    }
+    return process.env.RESEND_API_KEY || '';
 }
-
 function getResendFromEmail() {
-  try {
-    const envPath = path.join(process.cwd(), '.env');
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const lines = envContent.split(/\r?\n/);
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('RESEND_FROM_EMAIL=')) {
-          const val = trimmed.substring('RESEND_FROM_EMAIL='.length);
-          if (val) {
-            const cleanVal = val.replace(/^['"]|['"]$/g, '').trim();
-            if (cleanVal) return cleanVal;
-          }
+    try {
+        const envPath = path.join(process.cwd(), '.env');
+        if (fs.existsSync(envPath)) {
+            const envContent = fs.readFileSync(envPath, 'utf8');
+            const lines = envContent.split(/\r?\n/);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('RESEND_FROM_EMAIL=')) {
+                    const val = trimmed.substring('RESEND_FROM_EMAIL='.length);
+                    if (val) {
+                        const cleanVal = val.replace(/^['"]|['"]$/g, '').trim();
+                        if (cleanVal)
+                            return cleanVal;
+                    }
+                }
+            }
         }
-      }
     }
-  } catch (err) {
-    // ignorar
-  }
-  return process.env.RESEND_FROM_EMAIL || 'C2Tech <onboarding@resend.dev>';
+    catch (err) {
+        // ignorar
+    }
+    return process.env.RESEND_FROM_EMAIL || 'C2Tech <onboarding@resend.dev>';
 }
-
-export async function sendConfirmationEmail({
-  buyerName,
-  buyerEmail,
-  productSlug,
-  productName,
-  productPrice,
-  products: items,
-  orderId,
-  paymentMethod
-}: {
-  buyerName: string;
-  buyerEmail: string;
-  productSlug?: string;
-  productName?: string;
-  productPrice?: number;
-  products?: Array<{ slug: string; name: string; price: number }>;
-  orderId: string;
-  paymentMethod: 'pix' | 'credit_card';
-}) {
-  const apiKey = getResendApiKey();
-  const fromEmail = getResendFromEmail();
-
-  if (!apiKey) {
-    console.error('Resend API key não configurada.');
-    return { success: false, error: 'Chave API do Resend não configurada.' };
-  }
-
-  // Normalize products list for single product compatibility
-  let checkoutProducts: Array<{ slug: string; name: string; price: number }> = [];
-  if (items && Array.isArray(items)) {
-    checkoutProducts = items;
-  } else if (productSlug && productName && productPrice !== undefined) {
-    checkoutProducts = [{ slug: productSlug, name: productName, price: productPrice }];
-  }
-
-  if (checkoutProducts.length === 0) {
-    return { success: false, error: 'Nenhum produto fornecido para o e-mail de confirmação.' };
-  }
-
-  const paymentMethodLabel = paymentMethod === 'pix' ? 'Pix (Aprovação Instantânea)' : 'Cartão de Crédito';
-  const totalPaid = checkoutProducts.reduce((sum, p) => sum + p.price, 0);
-  const formattedTotalPrice = totalPaid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-  // Generate dynamic product rows
-  const productsTableRows = checkoutProducts.map(p => `
+export async function sendConfirmationEmail({ buyerName, buyerEmail, productSlug, productName, productPrice, products: items, orderId, paymentMethod }) {
+    const apiKey = getResendApiKey();
+    const fromEmail = getResendFromEmail();
+    if (!apiKey) {
+        console.error('Resend API key não configurada.');
+        return { success: false, error: 'Chave API do Resend não configurada.' };
+    }
+    // Normalize products list for single product compatibility
+    let checkoutProducts = [];
+    if (items && Array.isArray(items)) {
+        checkoutProducts = items;
+    }
+    else if (productSlug && productName && productPrice !== undefined) {
+        checkoutProducts = [{ slug: productSlug, name: productName, price: productPrice }];
+    }
+    if (checkoutProducts.length === 0) {
+        return { success: false, error: 'Nenhum produto fornecido para o e-mail de confirmação.' };
+    }
+    const paymentMethodLabel = paymentMethod === 'pix' ? 'Pix (Aprovação Instantânea)' : 'Cartão de Crédito';
+    const totalPaid = checkoutProducts.reduce((sum, p) => sum + p.price, 0);
+    const formattedTotalPrice = totalPaid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // Generate dynamic product rows
+    const productsTableRows = checkoutProducts.map(p => `
     <tr>
       <td style="padding: 12px; text-align: left; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 500;">${p.name}</td>
       <td style="padding: 12px; text-align: right; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 500;">${p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
     </tr>
   `).join('');
-
-  // Generate dynamic download buttons
-  const downloadButtonsSection = checkoutProducts.map(p => {
-    const downloadUrl = getDownloadLink(p.slug);
-    return `
+    // Generate dynamic download buttons
+    const downloadButtonsSection = checkoutProducts.map(p => {
+        const downloadUrl = getDownloadLink(p.slug);
+        return `
       <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 16px 0; text-align: center;">
         <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px; font-weight: bold;">${p.name}</h4>
         <a href="${downloadUrl}" target="_blank" style="display: inline-block; background-color: #0284c7; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; border: 1px solid #0284c7; min-width: 200px; box-shadow: 0 4px 6px rgba(2, 132, 199, 0.15);"><span style="color: #ffffff; font-weight: bold; text-decoration: none;">Acessar Google Drive (Download)</span></a>
       </div>
     `;
-  }).join('');
-
-  const htmlContent = `
+    }).join('');
+    const htmlContent = `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
@@ -181,34 +158,31 @@ export async function sendConfirmationEmail({
     </body>
     </html>
   `;
-
-  // Determine email subject name
-  const subjectLabel = checkoutProducts.length === 1 ? checkoutProducts[0].name : `${checkoutProducts.length} Softwares`;
-
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: buyerEmail,
-        subject: `Sua Licença Vitalícia do ${subjectLabel} está liberada! 🚀`,
-        html: htmlContent
-      })
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Erro desconhecido ao enviar e-mail via Resend API.');
+    // Determine email subject name
+    const subjectLabel = checkoutProducts.length === 1 ? checkoutProducts[0].name : `${checkoutProducts.length} Softwares`;
+    try {
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: fromEmail,
+                to: buyerEmail,
+                subject: `Sua Licença Vitalícia do ${subjectLabel} está liberada! 🚀`,
+                html: htmlContent
+            })
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || 'Erro desconhecido ao enviar e-mail via Resend API.');
+        }
+        console.log(`E-mail enviado com sucesso via Resend para ${buyerEmail}. ID:`, result.id);
+        return { success: true, id: result.id };
     }
-
-    console.log(`E-mail enviado com sucesso via Resend para ${buyerEmail}. ID:`, result.id);
-    return { success: true, id: result.id };
-  } catch (error: any) {
-    console.error('Falha ao enviar e-mail via Resend:', error);
-    return { success: false, error: error.message || error };
-  }
+    catch (error) {
+        console.error('Falha ao enviar e-mail via Resend:', error);
+        return { success: false, error: error.message || error };
+    }
 }

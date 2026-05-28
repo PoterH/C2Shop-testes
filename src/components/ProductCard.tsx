@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Monitor, Send, Info, ShoppingCart, Star } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 import type { Product } from '../data/products';
 import { reviewsData } from '../data/reviews';
 
@@ -9,6 +10,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { addToCart } = useCart();
   const productReviews = reviewsData[product.id] || [];
   const averageRating = productReviews.length > 0
     ? (productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1)
@@ -234,14 +236,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <Info className="w-3.5 h-3.5 mr-1 text-slate-400" />
               Detalhes
             </Link>
-            <Link
-              to={`/produto/${product.slug}?checkout=true`}
-              className="flex items-center justify-center py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white transition-all duration-200 shadow-sm shadow-emerald-500/10 hover:shadow"
+            <button
+              onClick={() => addToCart(product)}
+              className="flex items-center justify-center py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white transition-all duration-200 shadow-sm shadow-emerald-500/10 hover:shadow border-none cursor-pointer"
               id={`buy-now-${product.id}`}
             >
               <ShoppingCart className="w-3.5 h-3.5 mr-1" />
               Comprar
-            </Link>
+            </button>
           </div>
         )}
       </div>

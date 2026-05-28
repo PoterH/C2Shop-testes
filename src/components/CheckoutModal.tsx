@@ -17,9 +17,10 @@ import {
 import type { Product } from '../data/products';
 // @ts-ignore
 import EfiPay from 'payment-token-efi';
+import { useCart } from '../context/CartContext';
 
 interface CheckoutModalProps {
-  product: Product;
+  product?: Product;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -29,12 +30,18 @@ type PaymentMethod = 'pix' | 'card';
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { cartItems, total, discountAmount, couponCode, clearCart } = useCart();
+  const activeProduct = product || cartItems[0];
   
   // Steps & Tabs
   const [currentStep, setCurrentStep] = useState<Step>('info');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Success message states
+  const [successTitle, setSuccessTitle] = useState('Pagamento Confirmado!');
+  const [successDescription, setSuccessDescription] = useState('Sua transação foi processada com sucesso. Estamos gerando sua licença e enviando os arquivos de acesso para o seu e-mail.');
 
   // Form State: Personal Info
   const [fullName, setFullName] = useState('');
@@ -73,10 +80,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
     const monthlyRate = 0.0299; // 2.99% ao mês
 
     for (let i = 1; i <= 12; i++) {
-      let value = product.price;
+      let value = total;
       if (i > 1) {
         // Tabela Price (Juros Compostos)
-        value = product.price * (monthlyRate * Math.pow(1 + monthlyRate, i)) / (Math.pow(1 + monthlyRate, i) - 1);
+        value = total * (monthlyRate * Math.pow(1 + monthlyRate, i)) / (Math.pow(1 + monthlyRate, i) - 1);
       }
       const formattedValue = value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       options.push({
@@ -289,7 +296,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productSlug: product.slug,
+          products: cartItems.map(item => ({ slug: item.slug })),
+          coupon: couponCode || null,
           buyer: {
             name: fullName,
             email: email,
@@ -338,7 +346,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 txid,
-                productSlug: product.slug,
+                products: cartItems.map(item => ({ slug: item.slug, name: item.name, price: item.price })),
                 buyer: {
                   name: fullName,
                   email,
@@ -350,7 +358,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
             console.error('Erro ao chamar api/send-email:', emailErr);
           }
 
+          setSuccessTitle('Pagamento Confirmado!');
+          setSuccessDescription('Sua transação Pix foi processada com sucesso via Efí Bank. Estamos gerando sua licença e enviando os arquivos de acesso para o seu e-mail.');
           setCurrentStep('success');
+          clearCart(); // Limpa o carrinho
           
           // Redirect to thank you page after 3 seconds of success screen
           setTimeout(() => {
@@ -394,7 +405,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productSlug: product.slug,
+          products: cartItems.map(item => ({ slug: item.slug })),
+          coupon: couponCode || null,
           buyer: {
             name: fullName,
             email: email,
@@ -419,11 +431,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
       }
 
       if (data.status === 'approved' || data.status === 'paid' || data.status === 'confirmado') {
+        setSuccessTitle('Pagamento Aprovado!');
+        setSuccessDescription('Sua transação foi aprovada e processada com sucesso. Estamos gerando sua licença e enviando os arquivos de acesso para o seu e-mail.');
         setCurrentStep('success');
+        clearCart(); // Limpa o carrinho
         setTimeout(() => {
           onClose();
           navigate('/obrigado');
         }, 3000);
+      } else if (data.status === 'authorized' || data.status === 'pending_analysis' || data.status === 'em_analise' || data.status === 'pending') {
+        setSuccessTitle('Pagamento em Análise!');
+        setSuccessDescription('Seu pagamento foi recebido e está em análise de segurança. Assim que a análise for concluída (geralmente em alguns minutos), as licenças e os arquivos de acesso serão enviados automaticamente para o seu e-mail.');
+        setCurrentStep('success');
+        clearCart(); // Limpa o carrinho
+        setTimeout(() => {
+          onClose();
+          navigate('/obrigado');
+        }, 5000);
       } else {
         throw new Error(`O pagamento está com status: ${data.status}. Por favor, verifique os dados do cartão.`);
       }
@@ -445,12 +469,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   if (!isOpen) return null;
 
   // Pricing math
-  const formattedPrice = product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const pixDiscountPrice = product.price * 0.98;
+  const formattedPrice = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const pixDiscountPrice = total * 0.98;
   const formattedPixPrice = pixDiscountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-
-
 
   return (
     <>
@@ -470,7 +491,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
               Checkout Seguro
             </span>
             <h3 className="font-display font-bold text-slate-900 text-lg mt-1 truncate max-w-[280px]">
-              {product.name}
+              {cartItems.length === 1 ? activeProduct?.name : `${cartItems.length} Softwares`}
             </h3>
           </div>
           <button 
@@ -503,6 +524,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                 <p className="text-slate-500 text-xs">
                   Os dados abaixo são necessários para emissão da licença e nota fiscal.
                 </p>
+              </div>
+
+              {/* List of items in checkout */}
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Resumo do pedido</span>
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center text-xs">
+                    <span className="font-semibold text-slate-700">{item.name}</span>
+                    <span className="font-bold text-slate-900">{item.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                  </div>
+                ))}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between items-center text-xs text-emerald-600 font-semibold pt-2 border-t border-slate-200/60">
+                    <span>Desconto (10% OFF10)</span>
+                    <span>-{discountAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3.5">
@@ -915,10 +953,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
 
               <div className="space-y-2">
                 <h4 className="font-display font-extrabold text-slate-900 text-2xl">
-                  Pagamento Confirmado!
+                  {successTitle}
                 </h4>
                 <p className="text-slate-600 text-sm max-w-md mx-auto">
-                  Sua transação foi processada com sucesso no Efí Bank. Estamos gerando sua licença e enviando os arquivos de acesso para o seu e-mail.
+                  {successDescription}
                 </p>
               </div>
 

@@ -16,16 +16,28 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const { txid, productSlug, buyer } = req.body;
+  const { txid, productSlug, products: items, buyer } = req.body;
 
-  if (!txid || !productSlug || !buyer || !buyer.email || !buyer.name) {
+  if (!txid || (!productSlug && (!items || !Array.isArray(items))) || !buyer || !buyer.email || !buyer.name) {
     return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes' });
   }
 
-  // Busca o produto correspondente para segurança de preço e informações do e-mail
-  const product = products.find((p: any) => p.slug === productSlug);
-  if (!product) {
-    return res.status(404).json({ error: 'Produto não encontrado' });
+  // Backwards compatibility for single productSlug and array of products
+  let emailItems: Array<{ slug: string }> = [];
+  if (items && Array.isArray(items)) {
+    emailItems = items;
+  } else if (productSlug) {
+    emailItems = [{ slug: productSlug }];
+  }
+
+  // Find all matched products
+  const matchedProducts: any[] = [];
+  for (const item of emailItems) {
+    const matched = products.find((p: any) => p.slug === item.slug);
+    if (!matched) {
+      return res.status(404).json({ error: `Produto não encontrado: ${item.slug}` });
+    }
+    matchedProducts.push(matched);
   }
 
   // Validação de segurança: verifica no Efí Bank se a transação do Pix realmente foi paga (CONCLUIDA)
@@ -59,9 +71,11 @@ export default async function handler(req: any, res: any) {
     const emailResult = await sendConfirmationEmail({
       buyerName: buyer.name,
       buyerEmail: buyer.email,
-      productSlug: product.slug,
-      productName: product.name,
-      productPrice: product.price * 0.98,
+      products: matchedProducts.map(p => ({
+        slug: p.slug,
+        name: p.name,
+        price: p.price * 0.98 // Aplica desconto do Pix (2%) para exibir o valor correto do recibo
+      })),
       orderId: txid,
       paymentMethod: 'pix'
     });

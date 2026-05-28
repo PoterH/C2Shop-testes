@@ -51,6 +51,7 @@ export default async function handler(req: any, res: any) {
       data.buyer?.name || data.customer?.name || data.name || data.payer?.name || 'Cliente';
     
     // Extração robusta do slug ou identificador do produto
+    const itemsArray = payload.items || data.items || [];
     const productSlug = 
       payload.product?.slug || payload.product?.id || payload.product_id || payload.items?.[0]?.id || payload.offer?.product_id ||
       data.product?.slug || data.product?.id || data.product_id || data.items?.[0]?.id || data.offer?.product_id;
@@ -60,46 +61,64 @@ export default async function handler(req: any, res: any) {
       data.id || data.order_id || data.reference || data.order?.id ||
       'cakto_' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    console.log(`Dados extraídos -> Comprador: "${name}" | Email: "${email}" | Produto/Slug: "${productSlug}" | Pedido: "${orderId}"`);
+    console.log(`Dados extraídos -> Comprador: "${name}" | Email: "${email}" | Produto/Slug principal: "${productSlug}" | Pedido: "${orderId}"`);
 
     if (!email) {
       console.error('E-mail do comprador ausente no payload do webhook.');
       return res.status(400).json({ error: 'E-mail do comprador não encontrado no payload' });
     }
 
-    if (!productSlug) {
-      console.error('Identificador do produto (slug/id) ausente no payload do webhook.');
-      return res.status(400).json({ error: 'Identificador do produto não encontrado no payload' });
+    // Match products in local DB
+    const matchedProducts: any[] = [];
+    if (itemsArray.length > 0) {
+      for (const item of itemsArray) {
+        const sku = item.slug || item.id || item.product_id;
+        const matched = products.find((p: any) => 
+          p.slug === sku || 
+          p.id === sku || 
+          (item.name && p.name.toLowerCase().includes(item.name.toLowerCase()))
+        );
+        if (matched) {
+          matchedProducts.push(matched);
+        }
+      }
     }
 
-    // Procura o produto no banco de dados local
-    // Mapeamos para bater tanto com slug quanto com id
-    const product = products.find((p: any) => 
-      p.slug === productSlug || 
-      p.id === productSlug || 
-      (payload.product?.name && p.name.toLowerCase().includes(payload.product.name.toLowerCase()))
-    );
-
-    if (!product) {
-      console.error(`Produto correspondente a "${productSlug}" não encontrado em nossa base de dados.`);
-      return res.status(404).json({ error: `Produto não encontrado para a chave: ${productSlug}` });
+    // Fallback if no items matched via array
+    if (matchedProducts.length === 0 && productSlug) {
+      const matched = products.find((p: any) => 
+        p.slug === productSlug || 
+        p.id === productSlug || 
+        (payload.product?.name && p.name.toLowerCase().includes(payload.product.name.toLowerCase())) ||
+        (data.product?.name && p.name.toLowerCase().includes(data.product.name.toLowerCase()))
+      );
+      if (matched) {
+        matchedProducts.push(matched);
+      }
     }
 
-    console.log(`Produto correspondente encontrado: "${product.name}" (Slug: ${product.slug})`);
+    if (matchedProducts.length === 0) {
+      console.error(`Nenhum produto correspondente a "${productSlug}" encontrado em nossa base de dados.`);
+      return res.status(404).json({ error: `Nenhum produto encontrado para as chaves fornecidas.` });
+    }
+
+    console.log(`Produtos encontrados no webhook da Cakto: ${matchedProducts.map(p => p.name).join(', ')}`);
 
     // Dispara o e-mail de entrega via Resend
     const emailRes = await sendConfirmationEmail({
       buyerName: name,
       buyerEmail: email,
-      productSlug: product.slug,
-      productName: product.name,
-      productPrice: product.price,
+      products: matchedProducts.map(p => ({
+        slug: p.slug,
+        name: p.name,
+        price: p.price
+      })),
       orderId: String(orderId),
-      paymentMethod: 'credit_card' // cakto handles credit card payments
+      paymentMethod: 'credit_card'
     });
 
     if (emailRes.success) {
-      console.log(`Entrega do software concluída com sucesso para o e-mail: ${email}`);
+      console.log(`Entrega do(s) software(s) concluída com sucesso para o e-mail: ${email}`);
       return res.status(200).json({ success: true, message: 'Entrega enviada com sucesso' });
     } else {
       console.error('Falha ao disparar o e-mail de confirmação via Resend:', emailRes.error);

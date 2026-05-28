@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, MessageCircle, ArrowRight } from 'lucide-react';
+import { Menu, X, MessageCircle, ArrowRight, ShoppingBag } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export const Header: React.FC = () => {
+  const { cartItems, setIsCartOpen } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -105,6 +107,24 @@ export const Header: React.FC = () => {
                 <span>WhatsApp</span>
               </a>
             )}
+            
+            {/* Cart Button */}
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className={`relative p-2 rounded-xl hover:bg-slate-100 transition-all flex items-center justify-center border-none bg-transparent cursor-pointer ${
+                isHeaderDark
+                  ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+              aria-label="Ver carrinho"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-accent-blue text-[9px] font-bold text-white shadow-sm">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
             <Link
               to="/catalogo"
               className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-accent-blue hover:bg-accent-blue-dark rounded-xl shadow-sm hover:shadow transition-all duration-200"
@@ -129,6 +149,24 @@ export const Header: React.FC = () => {
                 <MessageCircle className="w-6 h-6 text-emerald-500" />
               </a>
             )}
+
+            {/* Mobile Cart Button */}
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className={`relative p-2 rounded-xl transition-all flex items-center justify-center border-none bg-transparent cursor-pointer ${
+                isHeaderDark
+                  ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+              aria-label="Ver carrinho"
+            >
+              <ShoppingBag className="w-6 h-6" />
+              {cartItems.length > 0 && (
+                <span className="absolute top-0 right-0 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-accent-blue text-[9px] font-bold text-white shadow-sm">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className={`p-2 rounded-lg transition-colors focus:outline-none ${

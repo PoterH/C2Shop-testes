@@ -36,32 +36,6 @@ export const CATEGORIES = [
 
 export const products: Product[] = [
   {
-    id: 'produto_teste_5',
-    slug: 'produto-teste-5',
-    name: 'Produto de Teste (R$ 5,00)',
-    category: 'Escritório e Produtividade',
-    compatibility: 'Windows',
-    version: '1.0',
-    description: 'Produto de teste para homologação do gateway Appmax.',
-    longDescription: 'Este é um produto de teste fictício com o valor de R$ 5,00 criado especificamente para validar e testar pagamentos reais ou em sandbox via cartão de crédito utilizando a integração transparente da Appmax.',
-    price: 5.00,
-    originalPrice: 10.00,
-    checkoutUrl: 'https://pay.cakto.com.br/mock_test',
-    imageUrl: '/images/products/autocad-2027-windows.png',
-    features: [
-      'Validação de integração de pagamento',
-      'Testes com cartões de sandbox ou de produção',
-      'Entrega automática de licença fictícia',
-      'Verificação completa do checkout transparente'
-    ],
-    requirements: {
-      os: 'Windows 10 ou 11 (64-bits)',
-      cpu: 'Intel ou AMD Dual Core',
-      ram: '2 GB RAM',
-      storage: '100 MB de espaço livre'
-    }
-  },
-  {
     id: 'autocad_2027_win',
     slug: 'autocad-2027-windows',
     name: 'AutoCAD 2027 (Windows)',

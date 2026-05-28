@@ -10,7 +10,7 @@ import {
 } from './_appmax.js';
 
 export default async function handler(req: any, res: any) {
-  // Configuração de CORS para desenvolvimento local
+  // CORS configuration for local development
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,19 +23,42 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const { productSlug, buyer, paymentMethod, card, installments, billingAddress } = req.body;
+  const { productSlug, products: items, coupon, buyer, paymentMethod, card, installments, billingAddress } = req.body;
 
-  if (!productSlug || !buyer || !paymentMethod) {
+  if ((!productSlug && (!items || !Array.isArray(items))) || !buyer || !paymentMethod) {
     return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes' });
   }
 
-  // Busca o produto no banco de dados para segurança de preço
-  const product = products.find((p: any) => p.slug === productSlug);
-  if (!product) {
-    return res.status(404).json({ error: 'Produto não encontrado' });
+  // Backwards compatibility for single productSlug and array of products
+  let checkoutItems: Array<{ slug: string }> = [];
+  if (items && Array.isArray(items)) {
+    checkoutItems = items;
+  } else if (productSlug) {
+    checkoutItems = [{ slug: productSlug }];
   }
 
-  const pixPrice = product.price * 0.98;
+  // Find all products in local DB
+  const matchedProducts: any[] = [];
+  for (const item of checkoutItems) {
+    const matched = products.find((p: any) => p.slug === item.slug);
+    if (!matched) {
+      return res.status(404).json({ error: `Produto não encontrado: ${item.slug}` });
+    }
+    matchedProducts.push(matched);
+  }
+
+  // Math calculations
+  const subtotal = matchedProducts.reduce((sum, p) => sum + p.price, 0);
+  let discountAmount = 0;
+  let finalTotal = subtotal;
+
+  // Coupon OFF10 rule: 10% discount for more than 1 item in the cart
+  if (coupon === 'OFF10' && matchedProducts.length > 1) {
+    discountAmount = subtotal * 0.10;
+    finalTotal = subtotal - discountAmount;
+  }
+
+  const pixPrice = finalTotal * 0.98;
   const pixPriceStr = pixPrice.toFixed(2);
 
   // 1. PROCESSO DE PAGAMENTO PIX (EFI BANK)
@@ -59,6 +82,10 @@ export default async function handler(req: any, res: any) {
         throw new Error('Instância Efí não inicializada');
       }
 
+      // Group product names for Pix payment description (max 70 characters for Efí)
+      const namesString = matchedProducts.map(p => p.name).join(', ');
+      const description = `Softwares: ${namesString} - C2Tech`.substring(0, 70);
+
       const chargeBody = {
         calendario: {
           expiracao: 3600 // 1 hora
@@ -71,7 +98,7 @@ export default async function handler(req: any, res: any) {
           original: pixPriceStr
         },
         chave: process.env.EFI_PIX_KEY || '',
-        solicitacaoPagador: `Software ${product.name} - C2Tech`
+        solicitacaoPagador: description
       };
 
       const chargeRes = await efi.pixCreateImmediateCharge({}, chargeBody);
@@ -108,9 +135,7 @@ export default async function handler(req: any, res: any) {
         await sendConfirmationEmail({
           buyerName: buyer.name,
           buyerEmail: buyer.email,
-          productSlug: product.slug,
-          productName: product.name,
-          productPrice: product.price,
+          products: matchedProducts.map(p => ({ slug: p.slug, name: p.name, price: p.price })),
           orderId: 'mock_appmax_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
           paymentMethod: 'credit_card'
         });
@@ -131,7 +156,7 @@ export default async function handler(req: any, res: any) {
     }
 
     try {
-      // Step A: Cadastrar cliente
+      // Step A: Register Customer
       const customerId = await createAppmaxCustomer({
         name: buyer.name,
         email: buyer.email,
@@ -149,15 +174,10 @@ export default async function handler(req: any, res: any) {
         }
       });
 
-      // Step B: Criar pedido
-      const orderId = await createAppmaxOrder(customerId, {
-        slug: product.slug,
-        name: product.name,
-        price: product.price,
-        appmaxSku: product.appmaxSku
-      });
+      // Step B: Create Appmax Order containing all cart items with OFF10 applied if valid
+      const orderId = await createAppmaxOrder(customerId, matchedProducts, coupon);
 
-      // Step C: Tokenizar cartão
+      // Step C: Tokenize Card
       const cardToken = await tokenizeAppmaxCard({
         number: card.number,
         holderName: card.holderName,
@@ -166,7 +186,7 @@ export default async function handler(req: any, res: any) {
         expirationYear: Number(card.expirationYear)
       });
 
-      // Step D: Processar pagamento
+      // Step D: Process Credit Card Payment
       const paymentResult = await processAppmaxCreditCardPayment({
         orderId,
         customerId,
@@ -184,9 +204,7 @@ export default async function handler(req: any, res: any) {
           await sendConfirmationEmail({
             buyerName: buyer.name,
             buyerEmail: buyer.email,
-            productSlug: product.slug,
-            productName: product.name,
-            productPrice: product.price,
+            products: matchedProducts.map(p => ({ slug: p.slug, name: p.name, price: p.price })),
             orderId: String(orderId),
             paymentMethod: 'credit_card'
           });

@@ -119,25 +119,34 @@ export async function createAppmaxCustomer(buyer: {
 }
 
 // 2. Criar Pedido (POST /order) - Appmax v3
-export async function createAppmaxOrder(customerId: number, product: {
-  slug: string;
-  name: string;
-  price: number;
-  appmaxSku?: string;
-}) {
-  const sku = product.appmaxSku || product.slug;
+export async function createAppmaxOrder(
+  customerId: number,
+  productsList: Array<{
+    slug: string;
+    name: string;
+    price: number;
+    appmaxSku?: string;
+  }>,
+  coupon?: string
+) {
+  const applyDiscount = coupon === 'OFF10' && productsList.length > 1;
+
+  const productsPayload = productsList.map((product) => {
+    const sku = product.appmaxSku || product.slug;
+    const finalPrice = applyDiscount ? Number((product.price * 0.90).toFixed(2)) : product.price;
+
+    return {
+      sku: sku,
+      name: `Licença ${product.name}`,
+      qty: 1,
+      price: finalPrice,
+      digital_product: 1
+    };
+  });
 
   const payload = {
     customer_id: customerId,
-    products: [
-      {
-        sku: sku,
-        name: `Licença ${product.name}`,
-        qty: 1,
-        price: product.price,
-        digital_product: 1
-      }
-    ]
+    products: productsPayload
   };
 
   const res = await requestAppmax('/order', payload);

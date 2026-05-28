@@ -60,7 +60,6 @@ export default async function handler(req: any, res: any) {
     }
 
     // Robust extraction of product SKU/Slug
-    // Appmax sends products in an array, or sometimes directly
     const productsArray = payload.products || data.products || payload.items || data.items || [];
     let productSku = '';
     
@@ -77,46 +76,64 @@ export default async function handler(req: any, res: any) {
       payload.order?.id || data.order?.id ||
       'appmax_' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    console.log(`Dados extraídos -> Comprador: "${name}" | Email: "${email}" | SKU/Slug: "${productSku}" | Pedido: "${orderId}"`);
+    console.log(`Dados extraídos -> Comprador: "${name}" | Email: "${email}" | SKU/Slug principal: "${productSku}" | Pedido: "${orderId}"`);
 
     if (!email) {
       console.error('E-mail do comprador ausente no payload do webhook.');
       return res.status(400).json({ error: 'E-mail do comprador não encontrado no payload' });
     }
 
-    if (!productSku) {
-      console.error('SKU/Slug do produto ausente no payload do webhook.');
-      return res.status(400).json({ error: 'SKU/Slug do produto não encontrado no payload' });
+    // Match products in local DB
+    const matchedProducts: any[] = [];
+    if (productsArray.length > 0) {
+      for (const item of productsArray) {
+        const sku = item.sku || item.id || item.product_id;
+        const matched = products.find((p: any) => 
+          p.slug === sku || 
+          p.appmaxSku === sku || 
+          p.id === sku || 
+          (item.name && p.name.toLowerCase().includes(item.name.toLowerCase()))
+        );
+        if (matched) {
+          matchedProducts.push(matched);
+        }
+      }
     }
 
-    // Match product in local DB using slug or appmaxSku
-    const product = products.find((p: any) =>
-      p.slug === productSku ||
-      p.appmaxSku === productSku ||
-      p.id === productSku ||
-      (productsArray[0]?.name && p.name.toLowerCase().includes(productsArray[0].name.toLowerCase()))
-    );
-
-    if (!product) {
-      console.error(`Produto correspondente a "${productSku}" não encontrado na base de dados.`);
-      return res.status(404).json({ error: `Produto não encontrado para a chave: ${productSku}` });
+    // Fallback if no products matched via array
+    if (matchedProducts.length === 0 && productSku) {
+      const matched = products.find((p: any) => 
+        p.slug === productSku || 
+        p.appmaxSku === productSku || 
+        p.id === productSku
+      );
+      if (matched) {
+        matchedProducts.push(matched);
+      }
     }
 
-    console.log(`Produto correspondente encontrado: "${product.name}" (Slug: ${product.slug})`);
+    if (matchedProducts.length === 0) {
+      console.error(`Nenhum produto correspondente a "${productSku}" encontrado na base de dados.`);
+      return res.status(404).json({ error: `Nenhum produto encontrado para as chaves fornecidas: ${productSku}` });
+    }
+
+    console.log(`Produtos encontrados: ${matchedProducts.map(p => p.name).join(', ')}`);
 
     // Deliver email confirmation via Resend
     const emailRes = await sendConfirmationEmail({
       buyerName: name,
       buyerEmail: email,
-      productSlug: product.slug,
-      productName: product.name,
-      productPrice: product.price,
+      products: matchedProducts.map(p => ({
+        slug: p.slug,
+        name: p.name,
+        price: p.price
+      })),
       orderId: String(orderId),
       paymentMethod: 'credit_card'
     });
 
     if (emailRes.success) {
-      console.log(`Entrega do software concluída com sucesso para o e-mail: ${email}`);
+      console.log(`Entrega do(s) software(s) concluída com sucesso para o e-mail: ${email}`);
       return res.status(200).json({ success: true, message: 'Entrega enviada com sucesso' });
     } else {
       console.error('Falha ao disparar o e-mail de confirmação via Resend:', emailRes.error);
