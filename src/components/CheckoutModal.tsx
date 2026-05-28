@@ -12,8 +12,7 @@ import {
   ChevronLeft,
   CheckCircle2,
   AlertTriangle,
-  CreditCard,
-  MapPin
+  CreditCard
 } from 'lucide-react';
 import type { Product } from '../data/products';
 // @ts-ignore
@@ -51,41 +50,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   const [cardExpiryYear, setCardExpiryYear] = useState('');
   const [cardInstallments, setCardInstallments] = useState('1');
 
-  // Form State: Billing Address
-  const [billingZipcode, setBillingZipcode] = useState('');
-  const [billingStreet, setBillingStreet] = useState('');
-  const [billingNumber, setBillingNumber] = useState('');
-  const [billingComplement, setBillingComplement] = useState('');
-  const [billingNeighborhood, setBillingNeighborhood] = useState('');
-  const [billingCity, setBillingCity] = useState('');
-  const [billingState, setBillingState] = useState('');
 
-  // Helpers and Formatters
-  const handleZipcodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, '');
-    let formatted = raw;
-    if (raw.length > 5) {
-      formatted = `${raw.substring(0, 5)}-${raw.substring(5, 8)}`;
-    }
-    setBillingZipcode(formatted);
 
-    if (raw.length === 8) {
-      try {
-        const response = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
-        if (response.ok) {
-          const data = await response.json();
-          if (!data.erro) {
-            setBillingStreet(data.logradouro || '');
-            setBillingNeighborhood(data.bairro || '');
-            setBillingCity(data.localidade || '');
-            setBillingState(data.uf || '');
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao buscar CEP:', err);
-      }
-    }
-  };
+
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, '');
@@ -418,30 +385,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
       setErrorMessage('Por favor, insira o código de segurança (CVV) válido.');
       return;
     }
-    if (!billingZipcode || billingZipcode.replace(/\D/g, '').length !== 8) {
-      setErrorMessage('Por favor, insira um CEP válido.');
-      return;
-    }
-    if (!billingStreet.trim()) {
-      setErrorMessage('Por favor, insira a rua.');
-      return;
-    }
-    if (!billingNumber.trim()) {
-      setErrorMessage('Por favor, insira o número do endereço.');
-      return;
-    }
-    if (!billingNeighborhood.trim()) {
-      setErrorMessage('Por favor, insira o bairro.');
-      return;
-    }
-    if (!billingCity.trim()) {
-      setErrorMessage('Por favor, insira a cidade.');
-      return;
-    }
-    if (!billingState.trim() || billingState.length !== 2) {
-      setErrorMessage('Por favor, insira o estado (UF).');
-      return;
-    }
 
     setErrorMessage(null);
     setLoading(true);
@@ -466,15 +409,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
             cvv: cardCvv,
             expirationMonth: parseInt(cardExpiryMonth, 10),
             expirationYear: parseInt(cardExpiryYear, 10)
-          },
-          billingAddress: {
-            street: billingStreet,
-            number: billingNumber,
-            complement: billingComplement,
-            neighborhood: billingNeighborhood,
-            zipcode: billingZipcode.replace(/\D/g, ''),
-            city: billingCity,
-            state: billingState
           }
         })
       });
@@ -840,124 +774,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
                       </div>
                     </div>
 
-                    {/* ENDEREÇO DE COBRANÇA */}
-                    <div className="space-y-3 pt-2">
-                      <div className="flex items-center space-x-2 pb-1 border-b border-slate-100">
-                        <MapPin className="w-4 h-4 text-accent-blue" />
-                        <h5 className="font-display font-bold text-slate-800 text-xs uppercase tracking-wider">
-                          Endereço de Cobrança
-                        </h5>
-                      </div>
 
-                      {/* CEP */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                          CEP
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={billingZipcode}
-                          onChange={handleZipcodeChange}
-                          placeholder="00000-000"
-                          maxLength={9}
-                          className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
-                        />
-                      </div>
-
-                      {/* Rua e Número */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1 col-span-2">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Endereço / Rua
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={billingStreet}
-                            onChange={(e) => setBillingStreet(e.target.value)}
-                            placeholder="Nome da rua/avenida"
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
-                          />
-                        </div>
-
-                        <div className="space-y-1 col-span-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Número
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={billingNumber}
-                            onChange={(e) => setBillingNumber(e.target.value)}
-                            placeholder="123"
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Complemento e Bairro */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Complemento
-                          </label>
-                          <input
-                            type="text"
-                            value={billingComplement}
-                            onChange={(e) => setBillingComplement(e.target.value)}
-                            placeholder="Apt, Sala, etc (Opcional)"
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Bairro
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={billingNeighborhood}
-                            onChange={(e) => setBillingNeighborhood(e.target.value)}
-                            placeholder="Bairro"
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Cidade e Estado */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1 col-span-2">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Cidade
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={billingCity}
-                            onChange={(e) => setBillingCity(e.target.value)}
-                            placeholder="Cidade"
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
-                          />
-                        </div>
-
-                        <div className="space-y-1 col-span-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Estado (UF)
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={billingState}
-                            onChange={(e) => setBillingState(e.target.value.toUpperCase())}
-                            placeholder="PE"
-                            maxLength={2}
-                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all text-center outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
 
                     {/* Botão de Finalização */}
                     <div className="pt-2">
