@@ -11,9 +11,13 @@ import {
   FileText, 
   ChevronLeft,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard,
+  MapPin
 } from 'lucide-react';
 import type { Product } from '../data/products';
+// @ts-ignore
+import EfiPay from 'payment-token-efi';
 
 interface CheckoutModalProps {
   product: Product;
@@ -39,6 +43,85 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [phone, setPhone] = useState('');
 
+  // Form State: Credit Card
+  const [cardHolderName, setCardHolderName] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardExpiryMonth, setCardExpiryMonth] = useState('');
+  const [cardExpiryYear, setCardExpiryYear] = useState('');
+  const [cardInstallments, setCardInstallments] = useState('1');
+
+  // Form State: Billing Address
+  const [billingZipcode, setBillingZipcode] = useState('');
+  const [billingStreet, setBillingStreet] = useState('');
+  const [billingNumber, setBillingNumber] = useState('');
+  const [billingComplement, setBillingComplement] = useState('');
+  const [billingNeighborhood, setBillingNeighborhood] = useState('');
+  const [billingCity, setBillingCity] = useState('');
+  const [billingState, setBillingState] = useState('');
+
+  // Helpers and Formatters
+  const handleZipcodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    let formatted = raw;
+    if (raw.length > 5) {
+      formatted = `${raw.substring(0, 5)}-${raw.substring(5, 8)}`;
+    }
+    setBillingZipcode(formatted);
+
+    if (raw.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
+        if (response.ok) {
+          const data = await response.json();
+          if (!data.erro) {
+            setBillingStreet(data.logradouro || '');
+            setBillingNeighborhood(data.bairro || '');
+            setBillingCity(data.localidade || '');
+            setBillingState(data.uf || '');
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar CEP:', err);
+      }
+    }
+  };
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const parts = [];
+    for (let i = 0; i < raw.length; i += 4) {
+      parts.push(raw.substring(i, i + 4));
+    }
+    setCardNumber(parts.join(' ').substring(0, 19));
+  };
+
+  const handleCardCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setCardCvv(raw.substring(0, 4));
+  };
+
+  const getInstallmentOptions = () => {
+    const options = [];
+    const monthlyRate = 0.0299; // 2.99% ao mês
+
+    for (let i = 1; i <= 12; i++) {
+      let value = product.price;
+      if (i > 1) {
+        // Tabela Price (Juros Compostos)
+        value = product.price * (monthlyRate * Math.pow(1 + monthlyRate, i)) / (Math.pow(1 + monthlyRate, i) - 1);
+      }
+      const formattedValue = value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      options.push({
+        value: String(i),
+        label: `${i}x de ${formattedValue}`
+      });
+    }
+    return options;
+  };
+
+
+
 
 
   // Pix Payment Data from API
@@ -49,6 +132,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   // Polling ref
   const pollingIntervalRef = useRef<any>(null);
 
+  // Pix countdown state
+  const [timeLeft, setTimeLeft] = useState<number>(600);
 
   // Clean polling on unmount
   useEffect(() => {
@@ -58,6 +143,37 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
       }
     };
   }, []);
+
+  // Timer countdown for Pix
+  useEffect(() => {
+    let timerInterval: any = null;
+    if (currentStep === 'pix_waiting') {
+      setTimeLeft(600); // 10 minutos
+      timerInterval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerInterval);
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerInterval) clearInterval(timerInterval);
+    };
+  }, [currentStep]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Format Helper Masks
   const formatCPFOrCNPJ = (val: string) => {
@@ -95,6 +211,64 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
 
 
 
+
+
+  // Helper functions for mathematical CPF/CNPJ verification
+  const isValidCPF = (cpf: string): boolean => {
+    const clean = cpf.replace(/\D/g, '');
+    if (clean.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(clean)) return false; // Sequence of same digits
+
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(clean.charAt(i)) * (10 - i);
+    }
+    let rev = 11 - (sum % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(clean.charAt(9))) return false;
+
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(clean.charAt(i)) * (11 - i);
+    }
+    rev = 11 - (sum % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(clean.charAt(10))) return false;
+
+    return true;
+  };
+
+  const isValidCNPJ = (cnpj: string): boolean => {
+    const clean = cnpj.replace(/\D/g, '');
+    if (clean.length !== 14) return false;
+    if (/^(\d)\1{13}$/.test(clean)) return false; // Sequence of same digits
+
+    let size = clean.length - 2;
+    let numbers = clean.substring(0, size);
+    const digits = clean.substring(size);
+    let sum = 0;
+    let pos = size - 7;
+    for (let i = size; i >= 1; i--) {
+      sum += parseInt(numbers.charAt(size - i)) * pos--;
+      if (pos < 2) pos = 9;
+    }
+    let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (result !== parseInt(digits.charAt(0))) return false;
+
+    size = size + 1;
+    numbers = clean.substring(0, size);
+    sum = 0;
+    pos = size - 7;
+    for (let i = size; i >= 1; i--) {
+      sum += parseInt(numbers.charAt(size - i)) * pos--;
+      if (pos < 2) pos = 9;
+    }
+    result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (result !== parseInt(digits.charAt(1))) return false;
+
+    return true;
+  };
+
   // Step Validations
   const validateInfoStep = () => {
     if (fullName.trim().split(' ').length < 2) {
@@ -110,6 +284,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
       setErrorMessage('Por favor, insira um CPF ou CNPJ válido.');
       return false;
     }
+    
+    // Validação matemática do documento
+    if (cleanCpfCnpj.length === 11 && !isValidCPF(cleanCpfCnpj)) {
+      setErrorMessage('CPF inválido. Por favor, verifique os números digitados.');
+      return false;
+    }
+    if (cleanCpfCnpj.length === 14 && !isValidCNPJ(cleanCpfCnpj)) {
+      setErrorMessage('CNPJ inválido. Por favor, verifique os números digitados.');
+      return false;
+    }
+
     const cleanPhone = phone.replace(/\D/g, '');
     if (cleanPhone.length < 10 || cleanPhone.length > 11) {
       setErrorMessage('Por favor, insira um telefone válido com DDD.');
@@ -212,41 +397,106 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
     }, 3000);
   };
 
-  // Submit Card Order
-  // Submit Card Order - Redirection to Cakto
-  const handleCardCheckout = async () => {
-    setLoading(true);
+  // Submit Card Order - Appmax Transparent Checkout
+  const handleCardCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!cardNumber || cardNumber.replace(/\s/g, '').length < 15) {
+      setErrorMessage('Por favor, insira um número de cartão válido.');
+      return;
+    }
+    if (!cardHolderName.trim()) {
+      setErrorMessage('Por favor, insira o nome do titular do cartão.');
+      return;
+    }
+    if (!cardExpiryMonth || !cardExpiryYear) {
+      setErrorMessage('Por favor, selecione o mês e o ano de vencimento.');
+      return;
+    }
+    if (!cardCvv || cardCvv.length < 3) {
+      setErrorMessage('Por favor, insira o código de segurança (CVV) válido.');
+      return;
+    }
+    if (!billingZipcode || billingZipcode.replace(/\D/g, '').length !== 8) {
+      setErrorMessage('Por favor, insira um CEP válido.');
+      return;
+    }
+    if (!billingStreet.trim()) {
+      setErrorMessage('Por favor, insira a rua.');
+      return;
+    }
+    if (!billingNumber.trim()) {
+      setErrorMessage('Por favor, insira o número do endereço.');
+      return;
+    }
+    if (!billingNeighborhood.trim()) {
+      setErrorMessage('Por favor, insira o bairro.');
+      return;
+    }
+    if (!billingCity.trim()) {
+      setErrorMessage('Por favor, insira a cidade.');
+      return;
+    }
+    if (!billingState.trim() || billingState.length !== 2) {
+      setErrorMessage('Por favor, insira o estado (UF).');
+      return;
+    }
+
     setErrorMessage(null);
+    setLoading(true);
 
     try {
-      if (!product.checkoutUrl) {
-        // Redirecionamento mock de testes se não houver URL cadastrada (ex: no produto de R$ 1,00)
-        console.warn('Nenhuma checkoutUrl configurada para este produto. Redirecionando para a tela de sucesso para fins de teste local.');
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productSlug: product.slug,
+          buyer: {
+            name: fullName,
+            email: email,
+            cpf: cpfCnpj,
+            phone: phone
+          },
+          paymentMethod: 'credit_card',
+          installments: parseInt(cardInstallments, 10),
+          card: {
+            number: cardNumber.replace(/\s/g, ''),
+            holderName: cardHolderName,
+            cvv: cardCvv,
+            expirationMonth: parseInt(cardExpiryMonth, 10),
+            expirationYear: parseInt(cardExpiryYear, 10)
+          },
+          billingAddress: {
+            street: billingStreet,
+            number: billingNumber,
+            complement: billingComplement,
+            neighborhood: billingNeighborhood,
+            zipcode: billingZipcode.replace(/\D/g, ''),
+            city: billingCity,
+            state: billingState
+          }
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.details || 'Erro ao processar o pagamento no cartão.');
+      }
+
+      if (data.status === 'approved' || data.status === 'paid' || data.status === 'confirmado') {
         setCurrentStep('success');
         setTimeout(() => {
           onClose();
           navigate('/obrigado');
         }, 3000);
-        return;
+      } else {
+        throw new Error(`O pagamento está com status: ${data.status}. Por favor, verifique os dados do cartão.`);
       }
-
-      // Limpa os dados de CPF/CNPJ e Telefone para envio na URL
-      const cleanCpf = cpfCnpj.replace(/\D/g, '');
-      let cleanPhone = phone.replace(/\D/g, '');
-      // Para o Brasil, a Cakto exige o prefixo +55 na URL do checkout
-      if (cleanPhone.length > 0 && !cleanPhone.startsWith('55')) {
-        cleanPhone = '55' + cleanPhone;
-      }
-      const formattedPhone = '+' + cleanPhone;
-
-      // Constrói a URL do checkout da Cakto pré-preenchido
-      const redirectUrl = `${product.checkoutUrl}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&cpf=${cleanCpf}&phone=${encodeURIComponent(formattedPhone)}`;
-
-      // Redireciona o comprador
-      window.location.href = redirectUrl;
     } catch (err: any) {
-      console.error('Erro ao redirecionar para o checkout Cakto:', err);
-      setErrorMessage('Erro ao abrir o checkout de cartão. Tente novamente.');
+      console.error(err);
+      setErrorMessage(err.message || 'Houve um erro ao processar o pagamento. Verifique seus dados e tente novamente.');
+    } finally {
       setLoading(false);
     }
   };
@@ -264,6 +514,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
   const formattedPrice = product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const pixDiscountPrice = product.price * 0.98;
   const formattedPixPrice = pixDiscountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+
 
 
   return (
@@ -476,34 +728,258 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
 
                 {/* Credit Card Area */}
                 {paymentMethod === 'card' && (
-                  <div className="space-y-4 pt-2">
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 text-xs text-slate-700 leading-relaxed space-y-2">
-                      <p className="font-bold text-slate-800 flex items-center">
-                        🔒 Redirecionamento Criptografado Seguro
-                      </p>
-                      <p>
-                        Para sua total segurança, o pagamento com cartão de crédito é processado no ambiente oficial da <strong>Cakto</strong> (nossa parceira de pagamentos).
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        * Seus dados preenchidos serão transmitidos de forma segura para agilizar o preenchimento na tela de pagamento.
-                      </p>
+                  <form onSubmit={handleCardCheckout} className="space-y-5 pt-2">
+                    {/* DADOS DO CARTÃO */}
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2 pb-1 border-b border-slate-100">
+                        <CreditCard className="w-4 h-4 text-accent-blue" />
+                        <h5 className="font-display font-bold text-slate-800 text-xs uppercase tracking-wider">
+                          Dados do Cartão de Crédito
+                        </h5>
+                      </div>
+
+                      {/* Nome do Titular */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          Nome no Cartão
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={cardHolderName}
+                          onChange={(e) => setCardHolderName(e.target.value.toUpperCase())}
+                          placeholder="Como impresso no cartão"
+                          className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                        />
+                      </div>
+
+                      {/* Número do Cartão */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          Número do Cartão
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={cardNumber}
+                          onChange={handleCardNumberChange}
+                          placeholder="0000 0000 0000 0000"
+                          className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                        />
+                      </div>
+
+                      {/* Vencimento e CVV Grid */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1 col-span-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Mês
+                          </label>
+                          <select
+                            required
+                            value={cardExpiryMonth}
+                            onChange={(e) => setCardExpiryMonth(e.target.value)}
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all bg-white outline-none"
+                          >
+                            <option value="">Mês</option>
+                            {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((m) => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1 col-span-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Ano
+                          </label>
+                          <select
+                            required
+                            value={cardExpiryYear}
+                            onChange={(e) => setCardExpiryYear(e.target.value)}
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all bg-white outline-none"
+                          >
+                            <option value="">Ano</option>
+                            {Array.from({ length: 15 }, (_, i) => String(new Date().getFullYear() + i)).map((y) => (
+                              <option key={y} value={y}>{y}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1 col-span-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            CVV
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={cardCvv}
+                            onChange={handleCardCvvChange}
+                            placeholder="123"
+                            maxLength={4}
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Parcelas */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          Opções de Parcelamento
+                        </label>
+                        <select
+                          required
+                          value={cardInstallments}
+                          onChange={(e) => setCardInstallments(e.target.value)}
+                          className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all bg-white outline-none"
+                        >
+                          {getInstallmentOptions().map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
-                    <button
-                      onClick={handleCardCheckout}
-                      disabled={loading}
-                      className="w-full py-4 bg-accent-blue hover:bg-accent-blue-dark text-white font-bold rounded-2xl text-sm transition-all shadow-md flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Redirecionando...</span>
-                        </>
-                      ) : (
-                        <span>Finalizar Compra</span>
-                      )}
-                    </button>
-                  </div>
+                    {/* ENDEREÇO DE COBRANÇA */}
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center space-x-2 pb-1 border-b border-slate-100">
+                        <MapPin className="w-4 h-4 text-accent-blue" />
+                        <h5 className="font-display font-bold text-slate-800 text-xs uppercase tracking-wider">
+                          Endereço de Cobrança
+                        </h5>
+                      </div>
+
+                      {/* CEP */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          CEP
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={billingZipcode}
+                          onChange={handleZipcodeChange}
+                          placeholder="00000-000"
+                          maxLength={9}
+                          className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                        />
+                      </div>
+
+                      {/* Rua e Número */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1 col-span-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Endereço / Rua
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={billingStreet}
+                            onChange={(e) => setBillingStreet(e.target.value)}
+                            placeholder="Nome da rua/avenida"
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1 col-span-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Número
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={billingNumber}
+                            onChange={(e) => setBillingNumber(e.target.value)}
+                            placeholder="123"
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Complemento e Bairro */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Complemento
+                          </label>
+                          <input
+                            type="text"
+                            value={billingComplement}
+                            onChange={(e) => setBillingComplement(e.target.value)}
+                            placeholder="Apt, Sala, etc (Opcional)"
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Bairro
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={billingNeighborhood}
+                            onChange={(e) => setBillingNeighborhood(e.target.value)}
+                            placeholder="Bairro"
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Cidade e Estado */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1 col-span-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Cidade
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={billingCity}
+                            onChange={(e) => setBillingCity(e.target.value)}
+                            placeholder="Cidade"
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1 col-span-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Estado (UF)
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={billingState}
+                            onChange={(e) => setBillingState(e.target.value.toUpperCase())}
+                            placeholder="PE"
+                            maxLength={2}
+                            className="w-full px-3 py-2.5 border border-slate-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue rounded-xl text-sm transition-all text-center outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botão de Finalização */}
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-4 bg-accent-blue hover:bg-accent-blue-dark text-white font-bold rounded-2xl text-sm transition-all shadow-md flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed border-none outline-none"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Processando Pagamento...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            <span>Pagar com Segurança</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 )}
               </div>
             </div>
@@ -512,60 +988,104 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ product, isOpen, o
           {/* STEP 3: Pix Waiting Area */}
           {currentStep === 'pix_waiting' && (
             <div className="space-y-6 text-center py-4">
-              <div className="space-y-2">
-                <span className="bg-emerald-500/10 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-emerald-500/10 inline-flex items-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                  Aguardando Pagamento Pix
-                </span>
-                <h4 className="font-display font-extrabold text-slate-900 text-lg">
-                  Escaneie o QR Code ou Copie o código
-                </h4>
-              </div>
-
-              {/* QR Code Container */}
-              <div className="mx-auto w-48 h-48 bg-slate-50 border border-slate-100 rounded-3xl p-3 shadow-inner flex items-center justify-center">
-                {pixQrCode ? (
-                  <img 
-                    src={pixQrCode.startsWith('data:') || pixQrCode.startsWith('http') ? pixQrCode : `data:image/png;base64,${pixQrCode}`}
-                    alt="QR Code Pix"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                )}
-              </div>
-
-              {/* Copy Paste Code */}
-              <div className="space-y-2">
-                <p className="text-slate-500 text-xs max-w-sm mx-auto">
-                  Você também pode pagar copiando e colando a chave abaixo no aplicativo do seu banco.
-                </p>
-                <div className="flex items-center space-x-2 max-w-sm mx-auto bg-slate-50 border border-slate-200/60 p-2 rounded-2xl">
-                  <input
-                    type="text"
-                    readOnly
-                    value={pixCopyPaste}
-                    className="flex-1 bg-transparent text-xs text-slate-600 outline-none select-all truncate pl-1 border-none focus:ring-0"
-                  />
+              {timeLeft === 0 ? (
+                <div className="space-y-4 py-6">
+                  <div className="mx-auto w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center border border-red-100">
+                    <AlertTriangle className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h5 className="font-display font-bold text-slate-800 text-sm">O tempo para pagamento expirou</h5>
+                    <p className="text-slate-500 text-xs max-w-xs mx-auto">Não se preocupe! Você pode voltar e gerar um novo código ou escolher pagar com cartão.</p>
+                  </div>
                   <button
-                    onClick={handleCopyPix}
-                    className="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-accent-blue rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-sm"
-                    title="Copiar Pix"
+                    onClick={() => setCurrentStep('payment')}
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all cursor-pointer border-none"
                   >
-                    {copied ? (
-                      <span className="text-[10px] font-bold text-emerald-600 px-1">Copiado!</span>
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
+                    Gerar novo pagamento
                   </button>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <span className="bg-emerald-500/10 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-emerald-500/10 inline-flex items-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                      Aguardando Pagamento Pix
+                    </span>
+                    <h4 className="font-display font-extrabold text-slate-900 text-lg">
+                      Escaneie o QR Code ou Copie o código
+                    </h4>
+                  </div>
 
-              {/* Safety badge */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 max-w-sm mx-auto flex items-center justify-center space-x-2 text-[11px] text-slate-500">
-                <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Ambiente Criptografado e Monitorado pelo Efí Bank</span>
-              </div>
+                  {/* Timer display */}
+                  <div className="space-y-1 bg-slate-50 border border-slate-100 p-3 rounded-2xl max-w-[200px] mx-auto">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">O QR Code expira em</p>
+                    <p className="text-lg font-mono font-bold text-emerald-600">
+                      {formatTime(timeLeft)}
+                    </p>
+                  </div>
+
+                  {/* QR Code Container */}
+                  <div className="mx-auto w-48 h-48 bg-slate-50 border border-slate-100 rounded-3xl p-3 shadow-inner flex items-center justify-center">
+                    {pixQrCode ? (
+                      <img 
+                        src={pixQrCode.startsWith('data:') || pixQrCode.startsWith('http') ? pixQrCode : `data:image/png;base64,${pixQrCode}`}
+                        alt="QR Code Pix"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                    )}
+                  </div>
+
+                  {/* Copy Paste Code */}
+                  <div className="space-y-2">
+                    <p className="text-slate-500 text-xs max-w-sm mx-auto">
+                      Você também pode pagar copiando e colando a chave abaixo no aplicativo do seu banco.
+                    </p>
+                    <div className="flex items-center space-x-2 max-w-sm mx-auto bg-slate-50 border border-slate-200/60 p-2 rounded-2xl">
+                      <input
+                        type="text"
+                        readOnly
+                        value={pixCopyPaste}
+                        className="flex-1 bg-transparent text-xs text-slate-600 outline-none select-all truncate pl-1 border-none focus:ring-0"
+                      />
+                      <button
+                        onClick={handleCopyPix}
+                        className="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-accent-blue rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-sm"
+                        title="Copiar Pix"
+                      >
+                        {copied ? (
+                          <span className="text-[10px] font-bold text-emerald-600 px-1">Copiado!</span>
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Safety badge */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 max-w-sm mx-auto flex items-center justify-center space-x-2 text-[11px] text-slate-500">
+                    <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>Ambiente Criptografado e Monitorado pelo Efí Bank</span>
+                  </div>
+
+                  {/* Back/Change method button */}
+                  <div className="pt-2">
+                    <button
+                      onClick={() => {
+                        if (pollingIntervalRef.current) {
+                          clearInterval(pollingIntervalRef.current);
+                          pollingIntervalRef.current = null;
+                        }
+                        setCurrentStep('payment');
+                      }}
+                      className="text-slate-500 hover:text-slate-700 text-xs font-semibold underline cursor-pointer border-none bg-transparent"
+                    >
+                      Voltar e escolher outra forma de pagamento
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

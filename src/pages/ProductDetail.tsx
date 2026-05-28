@@ -19,16 +19,6 @@ export const ProductDetail: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  useEffect(() => {
-    if (searchParams.get('checkout') === 'true') {
-      setIsCheckoutOpen(true);
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('checkout');
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
-
-  
   const product = useMemo(() => {
     if (!slug) return undefined;
     return getProductBySlug(slug);
@@ -44,6 +34,15 @@ export const ProductDetail: React.FC = () => {
     const sum = productReviews.reduce((acc, r) => acc + r.rating, 0);
     return (sum / productReviews.length).toFixed(1);
   }, [productReviews]);
+
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'true' && !product?.unavailable) {
+      setIsCheckoutOpen(true);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('checkout');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, product]);
 
   const renderStars = (rating: number) => {
     return (
@@ -162,10 +161,17 @@ export const ProductDetail: React.FC = () => {
             </div>
           )}
           <div className="flex items-center space-x-2 text-xs text-slate-500">
-            <span className="flex items-center text-emerald-600 font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-              Em estoque para entrega imediata
-            </span>
+            {product.unavailable ? (
+              <span className="flex items-center text-rose-500 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
+                Temporariamente indisponível
+              </span>
+            ) : (
+              <span className="flex items-center text-emerald-600 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                Em estoque para entrega imediata
+              </span>
+            )}
           </div>
         </div>
 
@@ -209,14 +215,23 @@ export const ProductDetail: React.FC = () => {
 
         {/* CTAs */}
         <div className="space-y-3">
-          <button
-            onClick={() => setIsCheckoutOpen(true)}
-            className="w-full flex items-center justify-center py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl text-center shadow-lg transition-all animate-soft-pulse cursor-pointer border-none"
-            id={`detail-buy-${isMobile ? 'mobile' : 'desktop'}-${product.id}`}
-          >
-            <ShoppingCart className="w-5 h-5 mr-2 shrink-0" />
-            Comprar agora
-          </button>
+          {product.unavailable ? (
+            <button
+              disabled
+              className="w-full flex items-center justify-center py-4 bg-slate-200 text-slate-500 font-bold rounded-2xl text-center cursor-not-allowed border-none font-display text-sm uppercase tracking-wider"
+            >
+              Temporariamente indisponível
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsCheckoutOpen(true)}
+              className="w-full flex items-center justify-center py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl text-center shadow-lg transition-all animate-soft-pulse cursor-pointer border-none"
+              id={`detail-buy-${isMobile ? 'mobile' : 'desktop'}-${product.id}`}
+            >
+              <ShoppingCart className="w-5 h-5 mr-2 shrink-0" />
+              Comprar agora
+            </button>
+          )}
           
           <a
             href={whatsappUrl}

@@ -44,6 +44,7 @@ export const Header: React.FC = () => {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   const isHeaderDark = location.pathname === '/' && !isScrolled && !isOpen;
+  const showWhatsApp = location.pathname.startsWith('/catalogo') || location.pathname.startsWith('/produto');
 
   return (
     <header
@@ -89,19 +90,21 @@ export const Header: React.FC = () => {
  
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center space-x-4">
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex items-center font-medium text-sm transition-colors duration-200 ${
-                isHeaderDark
-                  ? 'text-slate-300 hover:text-emerald-400'
-                  : 'text-slate-700 hover:text-emerald-600'
-              }`}
-            >
-              <MessageCircle className="w-5 h-5 text-emerald-500 mr-1.5" />
-              <span>WhatsApp</span>
-            </a>
+            {showWhatsApp && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center font-medium text-sm transition-colors duration-200 ${
+                  isHeaderDark
+                    ? 'text-slate-300 hover:text-emerald-400'
+                    : 'text-slate-700 hover:text-emerald-600'
+                }`}
+              >
+                <MessageCircle className="w-5 h-5 text-emerald-500 mr-1.5" />
+                <span>WhatsApp</span>
+              </a>
+            )}
             <Link
               to="/catalogo"
               className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-accent-blue hover:bg-accent-blue-dark rounded-xl shadow-sm hover:shadow transition-all duration-200"
@@ -113,17 +116,19 @@ export const Header: React.FC = () => {
  
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`p-2 transition-colors ${
-                isHeaderDark ? 'text-slate-300 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'
-              }`}
-              aria-label="WhatsApp"
-            >
-              <MessageCircle className="w-6 h-6 text-emerald-500" />
-            </a>
+            {showWhatsApp && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`p-2 transition-colors ${
+                  isHeaderDark ? 'text-slate-300 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'
+                }`}
+                aria-label="WhatsApp"
+              >
+                <MessageCircle className="w-6 h-6 text-emerald-500" />
+              </a>
+            )}
             <button
               onClick={() => setIsOpen(!isOpen)}
               className={`p-2 rounded-lg transition-colors focus:outline-none ${
@@ -169,15 +174,17 @@ export const Header: React.FC = () => {
             ))}
             
             <div className="pt-4 flex flex-col space-y-3">
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center py-3 px-4 rounded-xl border border-slate-200 text-slate-700 hover:text-emerald-600 font-semibold transition-colors duration-200"
-              >
-                <MessageCircle className="w-5 h-5 text-emerald-500 mr-2" />
-                <span>Dúvidas no WhatsApp</span>
-              </a>
+              {showWhatsApp && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center py-3 px-4 rounded-xl border border-slate-200 text-slate-700 hover:text-emerald-600 font-semibold transition-colors duration-200"
+                >
+                  <MessageCircle className="w-5 h-5 text-emerald-500 mr-2" />
+                  <span>Dúvidas no WhatsApp</span>
+                </a>
+              )}
               <Link
                 to="/catalogo"
                 className="flex items-center justify-center py-3 px-4 rounded-xl bg-accent-blue text-white font-semibold shadow hover:bg-accent-blue-dark transition-all duration-200"

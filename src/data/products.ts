@@ -20,6 +20,8 @@ export interface Product {
   features: string[];
   notes?: string;
   imageUrl?: string;
+  unavailable?: boolean;
+  appmaxSku?: string;
 }
 
 export const CATEGORIES = [
@@ -34,28 +36,29 @@ export const CATEGORIES = [
 
 export const products: Product[] = [
   {
-    id: 'produto_teste_5_reais',
-    slug: 'produto-teste-5-reais',
+    id: 'produto_teste_5',
+    slug: 'produto-teste-5',
     name: 'Produto de Teste (R$ 5,00)',
     category: 'Escritório e Produtividade',
-    compatibility: 'Windows e macOS',
+    compatibility: 'Windows',
     version: '1.0',
-    description: 'Produto de teste de R$ 5,00 para validação de pagamentos.',
-    longDescription: 'Este produto foi criado exclusivamente para realizar testes rápidos de pagamento no cartão de crédito ou Pix, custando apenas R$ 5,00.',
+    description: 'Produto de teste para homologação do gateway Appmax.',
+    longDescription: 'Este é um produto de teste fictício com o valor de R$ 5,00 criado especificamente para validar e testar pagamentos reais ou em sandbox via cartão de crédito utilizando a integração transparente da Appmax.',
     price: 5.00,
     originalPrice: 10.00,
-    checkoutUrl: 'https://pay.cakto.com.br/4c8eebm_897149',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=300&auto=format&fit=crop',
+    checkoutUrl: 'https://pay.cakto.com.br/mock_test',
+    imageUrl: '/images/products/autocad-2027-windows.png',
     features: [
-      'Produto de Teste Oficial',
-      'Validação de checkout seguro',
-      'Liberação automática de link fictício no e-mail'
+      'Validação de integração de pagamento',
+      'Testes com cartões de sandbox ou de produção',
+      'Entrega automática de licença fictícia',
+      'Verificação completa do checkout transparente'
     ],
     requirements: {
-      os: 'Qualquer sistema operacional',
-      cpu: 'Qualquer processador',
-      ram: 'Qualquer quantidade',
-      storage: 'Leve'
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: 'Intel ou AMD Dual Core',
+      ram: '2 GB RAM',
+      storage: '100 MB de espaço livre'
     }
   },
   {
@@ -875,6 +878,64 @@ export const products: Product[] = [
       ram: '8 GB (Recomendável: 16 GB)',
       gpu: 'Suporte nativo a Metal da Apple',
       storage: '4 GB de espaço livre'
+    }
+  },
+  {
+    id: 'camtasia_2026',
+    slug: 'camtasia-2026',
+    name: 'Camtasia 2026',
+    category: 'Design e Criatividade',
+    compatibility: 'Windows',
+    version: '2026.1.2',
+    description: 'Editor de vídeo e gravador de tela profissional tudo-em-um para criação de conteúdo de alta qualidade.',
+    longDescription: 'O TechSmith Camtasia 2026 é o software líder de mercado para gravação de tela e edição de vídeo voltado para a criação de tutoriais, demonstrações de produtos, aulas online e vídeos de treinamento. Esta versão completa e funcional oferece gravação em alta definição, edição multitrilha intuitiva, efeitos visuais modernos, legendagem automática por IA e biblioteca rica em recursos prontos, tudo com acesso vitalício e sem taxas de assinatura mensal.',
+    price: 127.90,
+    originalPrice: 649.00,
+    checkoutUrl: 'https://pay.cakto.com.br/kxd76qu',
+    imageUrl: '/images/products/camtasia-2026.png',
+    features: [
+      'Versão completa e funcional',
+      'Acesso vitalício para uso ilimitado',
+      'Instalação assistida inclusa',
+      'Entrega automática no e-mail após o pagamento',
+      'Suporte remoto quando necessário',
+      'Pronto para uso imediato'
+    ],
+    requirements: {
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: 'Intel Core i5 de 12ª geração / AMD Ryzen 5 ou superior',
+      ram: '8 GB (Recomendável: 16 GB ou mais)',
+      gpu: 'Placa dedicada com 2 GB VRAM ou superior com suporte a DirectX 12',
+      storage: '4 GB de espaço livre (SSD recomendado)'
+    }
+  },
+  {
+    id: 'pdfelement_12',
+    slug: 'pdfelement-12',
+    name: 'Wondershare PDFelement Professional 12',
+    category: 'Escritório e Produtividade',
+    compatibility: 'Windows',
+    version: '12.0.2',
+    description: 'Editor de PDF completo e profissional para editar, converter, assinar e ler arquivos PDF.',
+    longDescription: 'O Wondershare PDFelement Professional 12 para Windows é a solução definitiva de PDF tudo-em-um. Com uma interface moderna e intuitiva, ele permite editar textos e imagens em PDFs com a mesma facilidade de um processador de texto, converter arquivos de e para múltiplos formatos (Word, Excel, PowerPoint, imagens), criar formulários preenchíveis, assinar digitalmente e aplicar tecnologia OCR avançada para digitalizar e pesquisar textos em documentos escaneados.',
+    price: 137.90,
+    originalPrice: 649.00,
+    checkoutUrl: 'https://pay.cakto.com.br/gcgjq3d',
+    imageUrl: '/images/products/pdfelement-12.png',
+    features: [
+      'Versão completa e funcional',
+      'Acesso vitalício para uso ilimitado',
+      'Instalação assistida inclusa',
+      'Entrega automática no e-mail após o pagamento',
+      'Suporte remoto quando necessário',
+      'Pronto para uso imediato'
+    ],
+    requirements: {
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: '1 GHz ou superior',
+      ram: '4 GB RAM (Recomendável: 8 GB)',
+      gpu: 'Placa de vídeo compatível com DirectX 9 ou superior',
+      storage: '2 GB de espaço livre'
     }
   }
 ];

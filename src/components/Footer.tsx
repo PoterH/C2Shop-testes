@@ -15,10 +15,10 @@ export const Footer: React.FC = () => {
       {/* Morphing Glowing Background Blobs (Similar to the Hero) */}
       <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0">
         <div className="absolute -bottom-20 -left-20 w-[350px] h-[350px] md:w-[500px] md:h-[500px] opacity-40">
-          <div className="w-full h-full bg-gradient-to-br from-[#07D4F3]/20 via-[#3F1DA7]/15 to-[#8B5CF6]/20 rounded-full blur-[80px] md:blur-[120px] animate-morph-blob-1"></div>
+          <div className="w-full h-full bg-gradient-to-br from-[#00d2ff]/20 via-[#0066FF]/15 to-[#0a21a5]/20 rounded-full blur-[80px] md:blur-[120px] animate-morph-blob-1"></div>
         </div>
         <div className="absolute -bottom-10 -right-20 w-[350px] h-[350px] md:w-[500px] md:h-[500px] opacity-40">
-          <div className="w-full h-full bg-gradient-to-tr from-[#3F1DA7]/18 via-[#07D4F3]/15 to-[#8B5CF6]/18 rounded-full blur-[80px] md:blur-[120px] animate-morph-blob-2"></div>
+          <div className="w-full h-full bg-gradient-to-tr from-[#0066FF]/18 via-[#00d2ff]/15 to-[#0a21a5]/18 rounded-full blur-[80px] md:blur-[120px] animate-morph-blob-2"></div>
         </div>
         
         {/* Subtle Tech Grid Overlay */}

@@ -1,7 +1,13 @@
 import { products } from './_products.js';
 import { getEfiInstance, isMockMode } from './_efi.js';
 import { sendConfirmationEmail } from './_email.js';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
+import {
+  isAppmaxMockMode,
+  createAppmaxCustomer,
+  createAppmaxOrder,
+  tokenizeAppmaxCard,
+  processAppmaxCreditCardPayment
+} from './_appmax.js';
 
 export default async function handler(req: any, res: any) {
   // Configuração de CORS para desenvolvimento local
@@ -17,7 +23,7 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const { productSlug, buyer, paymentMethod, paymentToken, installments, billingAddress, paymentMethodId, deviceId } = req.body;
+  const { productSlug, buyer, paymentMethod, card, installments, billingAddress } = req.body;
 
   if (!productSlug || !buyer || !paymentMethod) {
     return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes' });
@@ -29,58 +35,30 @@ export default async function handler(req: any, res: any) {
     return res.status(404).json({ error: 'Produto não encontrado' });
   }
 
-  const priceStr = product.price.toFixed(2);
   const pixPrice = product.price * 0.98;
   const pixPriceStr = pixPrice.toFixed(2);
-  const valueCentavos = Math.round(product.price * 100);
 
-  // MODO MOCK AUTOMÁTICO SE CREDENCIAIS NÃO ESTIVEREM CONFIGURADAS
-  if (isMockMode()) {
-    console.warn('Efí SDK: Iniciando em modo MOCK. Nenhuma credencial de produção/sandbox configurada no .env.');
-    if (paymentMethod === 'pix') {
+  // 1. PROCESSO DE PAGAMENTO PIX (EFI BANK)
+  if (paymentMethod === 'pix') {
+    if (isMockMode()) {
+      console.warn('Efí SDK: Iniciando em modo MOCK. Nenhuma credencial de produção/sandbox configurada no .env.');
       const mockTxid = 'mock_' + Math.random().toString(36).substring(2, 15);
       return res.status(200).json({
         success: true,
         paymentMethod: 'pix',
         txid: mockTxid,
-        // QR Code de exemplo contendo o texto para teste
         copyPaste: `00020101021226870014br.gov.bcb.pix2565mock.sejaefi.com.br/v2/cobv/${mockTxid}5204000053039865406${pixPriceStr}5802BR5910C2Tech6009Recife62070503***6304`,
-        // PNG de 1x1 pixel ou imagem genérica para não estourar a tela do cliente
         qrCodeBase64: 'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4wYCDw0xTzhDHgAAAAd0SU1FB+MGAg8NMSc4Qx4AAAD/SURBVHgB7dHBDcMgDETRpyt0g26QbdINukF36AalI2QJ4VCR/o3vVvgh8BkbY0zT1Fp771lr7z1r7b1nrb33rLX3nrX23rPW3nvW2nvPWnvvWWvvPWvtvWervfes/fdXKaXW2ntPa+29p7X23tNae+9prb33tNbee1pr7z2ttfceL09r7T0e/pRSaq2997TW3nta+zNrnP0k5xzH4e0/rO139vs7lVIqpdRae6+11t5rrbX3Wmvtvddae6+11t5rrbX3Wmvtvddae6+11t5rrbX3Wmvtvddae6+19t7j6W2t7cfs5zP7Mfv9nX7MfpJSaq2997TW3ntaa+89rbX3ntbee7w8APgDJzEwN54m2l0AAAAASUVORK5CYII=',
         mock: true,
       });
-    } else {
-      // Dispara o e-mail de teste em modo Mock para facilitar validações locais
-      try {
-        await sendConfirmationEmail({
-          buyerName: buyer.name,
-          buyerEmail: buyer.email,
-          productSlug: product.slug,
-          productName: product.name,
-          productPrice: product.price,
-          orderId: 'mock_card_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-          paymentMethod: 'credit_card'
-        });
-      } catch (err) {
-        console.error('Erro ao enviar e-mail mockado de cartão:', err);
+    }
+
+    try {
+      const efi = getEfiInstance();
+      if (!efi) {
+        throw new Error('Instância Efí não inicializada');
       }
 
-      return res.status(200).json({
-        success: true,
-        paymentMethod: 'credit_card',
-        status: 'approved',
-        mock: true,
-      });
-    }
-  }
-
-  try {
-    const efi = getEfiInstance();
-    if (!efi) {
-      throw new Error('Instância Efí não inicializada');
-    }
-
-    if (paymentMethod === 'pix') {
       const chargeBody = {
         calendario: {
           expiracao: 3600 // 1 hora
@@ -113,71 +91,95 @@ export default async function handler(req: any, res: any) {
         copyPaste: qrCodeRes.qrcode,
         qrCodeBase64: qrCodeRes.imagemQrcode,
       });
-    } else if (paymentMethod === 'credit_card') {
-      const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-      if (!mpAccessToken) {
-        throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurada.');
+    } catch (error: any) {
+      console.error('Erro no processamento do checkout Pix:', error);
+      return res.status(500).json({
+        error: 'Erro ao processar o pagamento Pix',
+        details: error.message || error
+      });
+    }
+  }
+
+  // 2. PROCESSO DE PAGAMENTO CARTÃO DE CRÉDITO (APPMAX TRANSPARENTE)
+  if (paymentMethod === 'credit_card' || paymentMethod === 'card') {
+    if (isAppmaxMockMode()) {
+      console.warn('Appmax API: Iniciando em modo MOCK. Nenhuma credencial de produção configurada no .env.');
+      try {
+        await sendConfirmationEmail({
+          buyerName: buyer.name,
+          buyerEmail: buyer.email,
+          productSlug: product.slug,
+          productName: product.name,
+          productPrice: product.price,
+          orderId: 'mock_appmax_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+          paymentMethod: 'credit_card'
+        });
+      } catch (err) {
+        console.error('Erro ao enviar e-mail mockado de cartão (Appmax):', err);
       }
 
-      // Inicializa o cliente do Mercado Pago
-      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-      const payment = new Payment(client);
+      return res.status(200).json({
+        success: true,
+        paymentMethod: 'credit_card',
+        status: 'approved',
+        mock: true,
+      });
+    }
 
-      const cleanPhone = buyer.phone.replace(/\D/g, '');
-      const areaCode = cleanPhone.substring(0, 2) || '11';
-      const phoneNumber = cleanPhone.substring(2) || '999999999';
+    if (!card || !billingAddress || !installments) {
+      return res.status(400).json({ error: 'Dados do cartão, endereço de cobrança ou parcelamento ausentes' });
+    }
 
-      const paymentBody = {
-        transaction_amount: Number(product.price),
-        description: `Licença ${product.name} - C2Tech`,
-        payment_method_id: paymentMethodId || 'visa',
-        token: paymentToken,
-        installments: Number(installments) || 1,
-        payer: {
-          email: buyer.email,
-          first_name: buyer.name.split(' ')[0],
-          last_name: buyer.name.split(' ').slice(1).join(' ') || 'Silva',
-          identification: {
-            type: buyer.cpf.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF',
-            number: buyer.cpf.replace(/\D/g, '')
-          }
-        },
-        additional_info: {
-          items: [
-            {
-              id: product.slug,
-              title: product.name,
-              description: `Licença vitalícia do software ${product.name}`,
-              category_id: 'software',
-              quantity: 1,
-              unit_price: Number(product.price)
-            }
-          ],
-          payer: {
-            first_name: buyer.name.split(' ')[0],
-            last_name: buyer.name.split(' ').slice(1).join(' ') || 'Silva',
-            phone: {
-              area_code: areaCode,
-              number: phoneNumber
-            },
-            address: billingAddress ? {
-              zip_code: billingAddress.zipcode.replace(/\D/g, ''),
-              street_name: billingAddress.street,
-              street_number: String(billingAddress.number || '123')
-            } : undefined
-          }
+    try {
+      // Step A: Cadastrar cliente
+      const customerId = await createAppmaxCustomer({
+        name: buyer.name,
+        email: buyer.email,
+        cpf: buyer.cpf,
+        phone: buyer.phone,
+        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+        billingAddress: {
+          street: billingAddress.street,
+          number: String(billingAddress.number),
+          complement: billingAddress.complement,
+          neighborhood: billingAddress.neighborhood,
+          zipcode: billingAddress.zipcode,
+          city: billingAddress.city,
+          state: billingAddress.state
         }
-      };
+      });
 
-      const requestOptions = deviceId ? {
-        meliSessionId: deviceId
-      } : undefined;
+      // Step B: Criar pedido
+      const orderId = await createAppmaxOrder(customerId, {
+        slug: product.slug,
+        name: product.name,
+        price: product.price,
+        appmaxSku: product.appmaxSku
+      });
 
-      const payRes = await payment.create({ body: paymentBody, requestOptions });
-      const status = payRes.status || 'pending';
+      // Step C: Tokenizar cartão
+      const cardToken = await tokenizeAppmaxCard({
+        number: card.number,
+        holderName: card.holderName,
+        cvv: card.cvv,
+        expirationMonth: Number(card.expirationMonth),
+        expirationYear: Number(card.expirationYear)
+      });
 
-      // Se a cobrança de cartão for aprovada/confirmada, dispara o e-mail pelo Resend
-      if (status === 'approved' || status === 'authorized') {
+      // Step D: Processar pagamento
+      const paymentResult = await processAppmaxCreditCardPayment({
+        orderId,
+        customerId,
+        cardToken,
+        cvv: card.cvv,
+        holderName: card.holderName,
+        holderDocumentNumber: buyer.cpf,
+        installments: Number(installments) || 1
+      });
+
+      const status = paymentResult.status;
+
+      if (status === 'approved' || status === 'paid' || status === 'confirmado') {
         try {
           await sendConfirmationEmail({
             buyerName: buyer.name,
@@ -185,7 +187,7 @@ export default async function handler(req: any, res: any) {
             productSlug: product.slug,
             productName: product.name,
             productPrice: product.price,
-            orderId: String(payRes.id),
+            orderId: String(orderId),
             paymentMethod: 'credit_card'
           });
         } catch (err) {
@@ -197,15 +199,16 @@ export default async function handler(req: any, res: any) {
         success: true,
         paymentMethod: 'credit_card',
         status,
+        orderId
       });
-    } else {
-      return res.status(400).json({ error: 'Método de pagamento inválido' });
+    } catch (error: any) {
+      console.error('Erro no processamento do checkout Appmax:', error);
+      return res.status(500).json({
+        error: 'Erro ao processar o pagamento do cartão de crédito',
+        details: error.message || error
+      });
     }
-  } catch (error: any) {
-    console.error('Erro no processamento do checkout:', error);
-    return res.status(500).json({ 
-      error: 'Erro ao processar o pagamento', 
-      details: error.message || error 
-    });
   }
+
+  return res.status(400).json({ error: 'Método de pagamento inválido' });
 }

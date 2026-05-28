@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Zap, 
@@ -9,7 +9,9 @@ import {
   MessageSquare, 
   ChevronDown,
   ChevronUp,
-  Star
+  Star,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { products, CATEGORIES } from '../data/products';
 import { ProductCard } from '../components/ProductCard';
@@ -35,10 +37,57 @@ export const Home: React.FC = () => {
     };
   }, []);
 
-  // Filter products for the landing page grid (show max 8 of active category)
+  // Filter products for the landing page grid (show max 16 of active category)
   const filteredProducts = products.filter(p => 
     activeCategory === 'Todos' || p.category === activeCategory
-  ).slice(0, 8);
+  ).slice(0, 16);
+
+  const [isPlaying, setIsPlaying] = useState(true);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Reset scroll to 0 when category changes
+  useEffect(() => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollLeft = 0;
+    }
+  }, [activeCategory]);
+
+  // Auto scroll effect for carousel
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      const el = carouselRef.current;
+      if (el) {
+        const scrollAmount = 320 + 24; // Card width + gap
+        const currentScroll = el.scrollLeft;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        
+        if (currentScroll >= maxScroll - 10) {
+          el.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          el.scrollTo({ left: currentScroll + scrollAmount, behavior: 'smooth' });
+        }
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, filteredProducts]);
+
+  const scrollLeft = () => {
+    const el = carouselRef.current;
+    if (el) {
+      const scrollAmount = 320 + 24;
+      el.scrollTo({ left: el.scrollLeft - scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    const el = carouselRef.current;
+    if (el) {
+      const scrollAmount = 320 + 24;
+      el.scrollTo({ left: el.scrollLeft + scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
@@ -156,7 +205,7 @@ export const Home: React.FC = () => {
   return (
     <div className="pt-0">
       {/* 1. HERO SECTION */}
-      <section className="relative bg-[#020617] pt-28 pb-20 md:pt-40 md:pb-32 overflow-hidden text-center z-0">
+      <section className="relative bg-[#020617] pt-20 pb-12 md:pt-40 md:pb-32 overflow-hidden text-center z-0">
         
         {/* Background Layers Wrapper (z-0 sits above section's bg color but behind relative z-10 content) */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0">
@@ -165,36 +214,36 @@ export const Home: React.FC = () => {
             className="absolute -top-10 -left-10 w-[450px] h-[450px] md:w-[650px] md:h-[650px] will-change-transform"
             style={{ transform: 'translate3d(calc(var(--scroll-y, 0px) * 0.02), calc(var(--scroll-y, 0px) * 0.08), 0)' }}
           >
-            <div className="w-full h-full bg-gradient-to-br from-[#07D4F3]/25 via-[#3F1DA7]/20 to-[#8B5CF6]/25 rounded-full blur-[100px] md:blur-[140px] animate-morph-blob-1"></div>
+            <div className="w-full h-full bg-gradient-to-br from-[#00d2ff]/25 via-[#0066FF]/20 to-[#0a21a5]/25 rounded-full blur-[100px] md:blur-[140px] animate-morph-blob-1"></div>
           </div>
           <div 
             className="absolute top-40 -right-10 w-[400px] h-[400px] md:w-[600px] md:h-[600px] will-change-transform"
             style={{ transform: 'translate3d(calc(var(--scroll-y, 0px) * -0.02), calc(var(--scroll-y, 0px) * -0.05), 0)' }}
           >
-            <div className="w-full h-full bg-gradient-to-tr from-[#3F1DA7]/22 via-[#07D4F3]/20 to-[#8B5CF6]/22 rounded-full blur-[90px] md:blur-[130px] animate-morph-blob-2"></div>
+            <div className="w-full h-full bg-gradient-to-tr from-[#0066FF]/22 via-[#00d2ff]/20 to-[#0a21a5]/22 rounded-full blur-[90px] md:blur-[130px] animate-morph-blob-2"></div>
           </div>
           <div 
             className="absolute bottom-10 left-[10%] w-[350px] h-[350px] md:w-[550px] md:h-[550px] will-change-transform"
             style={{ transform: 'translate3d(calc(var(--scroll-y, 0px) * -0.01), calc(var(--scroll-y, 0px) * 0.04), 0)' }}
           >
-            <div className="w-full h-full bg-gradient-to-tl from-[#07D4F3]/18 via-[#3F1DA7]/20 to-[#8B5CF6]/18 rounded-full blur-[80px] md:blur-[120px] animate-morph-blob-3"></div>
+            <div className="w-full h-full bg-gradient-to-tl from-[#00d2ff]/18 via-[#0066FF]/20 to-[#0a21a5]/18 rounded-full blur-[80px] md:blur-[120px] animate-morph-blob-3"></div>
           </div>
           
           {/* Subtle top ambient light glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-[#07D4F3]/15 via-transparent to-transparent blur-3xl"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-[#00d2ff]/15 via-transparent to-transparent blur-3xl"></div>
 
           {/* Tech Grid & Dot Patterns for premium background depth */}
           <div className="absolute inset-0 bg-grid-tech opacity-70"></div>
           <div className="absolute inset-0 bg-dot-tech opacity-50"></div>
 
           {/* Floating Sparkles/Telemetry Dots */}
-          <div className="absolute top-[20%] left-[10%] w-1.5 h-1.5 bg-[#07D4F3] rounded-full animate-pulse opacity-40"></div>
-          <div className="absolute top-[65%] left-[22%] w-1 h-1 bg-emerald-400 rounded-full animate-ping opacity-30"></div>
-          <div className="absolute top-[35%] right-[18%] w-1 h-1 bg-[#07D4F3] rounded-full animate-pulse opacity-50"></div>
+          <div className="absolute top-[20%] left-[10%] w-1.5 h-1.5 bg-[#00d2ff] rounded-full animate-pulse opacity-40"></div>
+          <div className="absolute top-[65%] left-[22%] w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping opacity-30"></div>
+          <div className="absolute top-[35%] right-[18%] w-1 h-1 bg-[#00d2ff] rounded-full animate-pulse opacity-50"></div>
           <div className="absolute top-[80%] right-[12%] w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse opacity-30"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 flex flex-col items-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5 md:space-y-8 flex flex-col items-center">
           
           {/* 1. Pill Badge with Avatars */}
           <div 
@@ -214,24 +263,24 @@ export const Home: React.FC = () => {
           </div>
 
           {/* 2. Headline */}
-          <div className="space-y-3 sm:space-y-4 max-w-5xl text-center">
+          <div className="space-y-2 md:space-y-4 max-w-5xl text-center">
             <h1 className="font-display text-white tracking-tight leading-[1.1] text-balance">
               <span className="font-light text-2xl sm:text-[36px] md:text-[44px] lg:text-[48px] xl:text-[52px] block text-white/90">
                 Você só foca no projeto.
               </span>
               <span className="font-black text-4xl sm:text-[56px] md:text-[68px] lg:text-[76px] xl:text-[80px] block mt-1 sm:mt-2">
-                A <span className="bg-gradient-to-r from-[#07D4F3] via-[#3F1DA7] to-[#8B5CF6] bg-clip-text text-transparent">C2Tech</span> cuida do resto.
+                A <span className="bg-gradient-to-r from-[#00d2ff] via-[#0066FF] to-[#0a21a5] bg-clip-text text-transparent">C2Tech</span> cuida do resto.
               </span>
             </h1>
             
             {/* 3. Sub-headline */}
-            <p className="text-slate-400 text-sm sm:text-base md:text-lg lg:text-xl max-w-3xl mx-auto leading-relaxed text-balance">
+            <p className="text-slate-400 text-sm sm:text-base md:text-lg lg:text-xl max-w-3xl mx-auto leading-normal md:leading-relaxed text-balance">
               Catálogo completo, área do cliente, entrega automática por e-mail e suporte técnico completo no WhatsApp! Tudo pronto para ativação vitalícia local, no mesmo lugar. E você só paga uma única vez por isso.
             </p>
           </div>
 
           {/* 4. Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md sm:max-w-2xl pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md sm:max-w-2xl pt-0 md:pt-4">
             <Link
               to="/catalogo"
               className="flex items-center justify-center px-8 py-4 md:px-12 md:py-5 text-base md:text-lg lg:text-xl font-bold text-white bg-accent-blue hover:bg-accent-blue-dark rounded-2xl md:rounded-3xl shadow-[0_4px_20px_rgba(2,132,199,0.25)] hover:shadow-[0_4px_25px_rgba(2,132,199,0.35)] transition-all duration-300 group whitespace-nowrap hover:scale-105 active:scale-95"
@@ -243,7 +292,7 @@ export const Home: React.FC = () => {
 
           {/* 5. Laptop AutoCAD Mockup (Static Image Only) */}
           <div 
-            className="w-full max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mt-12 transition-all duration-500"
+            className="w-full max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mt-4 md:mt-12 transition-all duration-500"
             style={{ transform: 'translate3d(0, calc(var(--scroll-y, 0px) * 0.03), 0)' }}
           >
             <img 
@@ -319,6 +368,16 @@ export const Home: React.FC = () => {
             </p>
           </div>
 
+          {/* Dynamic Catalog Notice Banner */}
+          <div className="max-w-4xl mx-auto mb-8 bg-sky-50/70 border border-sky-100/80 rounded-2xl p-4 text-center flex flex-col md:flex-row items-center justify-center gap-2 text-sky-950 text-sm shadow-sm select-none">
+            <span className="font-bold flex items-center justify-center text-accent-blue shrink-0">
+              💡 Apenas Alguns Destaques:
+            </span>
+            <span>
+              Esta é uma vitrine rotativa. Temos dezenas de outros softwares profissionais disponíveis em nosso catálogo completo!
+            </span>
+          </div>
+
           {/* Categories Slider/Tabs */}
           <div className="flex overflow-x-auto pb-4 mb-8 scrollbar-none justify-start md:justify-center -mx-4 px-4 gap-2">
             {CATEGORIES.map((category) => (
@@ -336,12 +395,40 @@ export const Home: React.FC = () => {
             ))}
           </div>
 
-          {/* Products Grid */}
+          {/* Products Carousel */}
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+            <div className="relative group/carousel w-full">
+              {/* Left Navigation Arrow */}
+              <button
+                onClick={scrollLeft}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 z-30 w-11 h-11 rounded-full bg-white hover:bg-slate-50 border border-slate-200 shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none opacity-0 group-hover/carousel:opacity-100 focus-visible:opacity-100"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="w-5 h-5 text-slate-700" />
+              </button>
+
+              {/* Scrollable Container */}
+              <div
+                ref={carouselRef}
+                className="flex overflow-x-auto gap-6 pb-6 pt-2 px-1 scroll-smooth scrollbar-none snap-x snap-mandatory"
+                onMouseEnter={() => setIsPlaying(false)}
+                onMouseLeave={() => setIsPlaying(true)}
+              >
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start flex flex-col">
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Navigation Arrow */}
+              <button
+                onClick={scrollRight}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 z-30 w-11 h-11 rounded-full bg-white hover:bg-slate-50 border border-slate-200 shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none opacity-0 group-hover/carousel:opacity-100 focus-visible:opacity-100"
+                aria-label="Próximo"
+              >
+                <ChevronRight className="w-5 h-5 text-slate-700" />
+              </button>
             </div>
           ) : (
             <div className="text-center py-12 bg-white rounded-3xl border border-slate-200">

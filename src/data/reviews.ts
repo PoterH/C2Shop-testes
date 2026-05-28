@@ -823,5 +823,33 @@ export const reviewsData: Record<string, Review[]> = {
       date: "2 semanas atrás",
       comment: "comprei pra fazer artes e estampas e ate agora esta perfeito. o suporte me ajudou a instalar por chat no whatsapp, recomendo."
     }
+  ],
+  camtasia_2026: [
+    {
+      author: "Julio C. Ramos",
+      rating: 5,
+      date: "3 dias atrás",
+      comment: "Gravo minhas videoaulas com ele td dia, o editor ta super completo e leve no win 11. Recomendo dmais!"
+    },
+    {
+      author: "Mariana T. Albuquerque",
+      rating: 5,
+      date: "1 semana atrás",
+      comment: "Melhor gravador de tela q ja usei. Chegou na hora no e-mail e ativou vitalicio certinho. Nota 10!"
+    }
+  ],
+  pdfelement_12: [
+    {
+      author: "Renato G. Vieira",
+      rating: 5,
+      date: "3 dias atrás",
+      comment: "Ótimo programa, muito mais leve e rápido que o acrobat. Consigo editar e converter qualquer pdf em word em segundos."
+    },
+    {
+      author: "Claudia F. Lins",
+      rating: 5,
+      date: "1 semana atrás",
+      comment: "O OCR dele funcionou perfeitamente para digitalizar uns documentos antigos escaneados que eu tinha. Recomendo demais!"
+    }
   ]
 };

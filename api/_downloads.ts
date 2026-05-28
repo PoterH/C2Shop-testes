@@ -24,6 +24,11 @@ export const DOWNLOAD_LINKS: Record<string, string> = {
   'tekla-structures-2025': 'https://drive.google.com/drive/folders/1WJ1RpvDdJfyXreqqZZTL0kW2WS415z3J?usp=drive_link',
   'rhinoceros-8': 'https://drive.google.com/drive/folders/12KF14NgmBt85gFu31vfbg5gVWcTpNSZu?usp=drive_link',
   'exocad-dentalcad-31-rijeka': 'https://drive.google.com/drive/folders/1dHqvXECpoZPkFxgjjqZRBiB6WgfKLBY1?usp=drive_link',
+  'civil-3d-2027': 'https://drive.google.com/drive/folders/1cpEkXZexH0a3cTv0auL2dr2v2-FcyOfh?usp=drive_link',
+  'proteus-9-professional': 'https://drive.google.com/drive/folders/1aHiVfWmY5X9Oge344rGiV5WPIIcg5sXL?usp=drive_link',
+  'parallels-desktop-26': 'https://drive.google.com/drive/folders/1wkOyx2Vjh7y-IPWCiW-u5JK0XcYRp6ld?usp=drive_link',
+  'camtasia-2026': 'https://drive.google.com/drive/folders/1RodJmSK5LFS3mquN4bs0bWYzidQPb2vF?usp=drive_link',
+  'pdfelement-12': 'https://drive.google.com/drive/folders/13nKtmJD-DSppbgEVVzpgW4hqx2yUALvw?usp=drive_link',
 };
 
 export function getDownloadLink(slug: string): string {

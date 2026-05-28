@@ -103,15 +103,33 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           {/* Badges Overlay */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-            <span className="bg-white/90 backdrop-blur-md text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center border border-emerald-500/20 shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-              Acesso vitalício
-            </span>
-            <span className="bg-white/90 backdrop-blur-md text-sky-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center border border-sky-500/20 shadow-sm">
-              <Send className="w-2.5 h-2.5 mr-1" />
-              Entrega imediata
-            </span>
+            {product.unavailable ? (
+              <span className="bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center border border-rose-600/30 shadow-md uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-white mr-1.5 animate-pulse"></span>
+                Indisponível
+              </span>
+            ) : (
+              <>
+                <span className="bg-white/90 backdrop-blur-md text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center border border-emerald-500/20 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                  Acesso vitalício
+                </span>
+                <span className="bg-white/90 backdrop-blur-md text-sky-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center border border-sky-500/20 shadow-sm">
+                  <Send className="w-2.5 h-2.5 mr-1" />
+                  Entrega imediata
+                </span>
+              </>
+            )}
           </div>
+
+          {/* Semi-transparent dark overlay for unavailable products */}
+          {product.unavailable && (
+            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1.5px] z-10 flex items-center justify-center">
+              <span className="bg-rose-600 text-white text-xs font-black px-4 py-2.5 rounded-xl uppercase tracking-wider shadow-lg border border-rose-500/30">
+                Temporariamente Indisponível
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Product Info */}
@@ -199,23 +217,33 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
       {/* CTA Buttons */}
       <div className="px-5 pb-5 pt-0 mt-auto">
-        <div className="grid grid-cols-2 gap-2">
+        {product.unavailable ? (
           <Link
             to={`/produto/${product.slug}`}
-            className="flex items-center justify-center py-2 px-3 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors duration-200"
+            className="flex items-center justify-center py-2.5 px-4 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors duration-200 w-full"
           >
-            <Info className="w-3.5 h-3.5 mr-1 text-slate-400" />
-            Detalhes
+            <Info className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+            Ver detalhes do software
           </Link>
-          <Link
-            to={`/produto/${product.slug}?checkout=true`}
-            className="flex items-center justify-center py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white transition-all duration-200 shadow-sm shadow-emerald-500/10 hover:shadow"
-            id={`buy-now-${product.id}`}
-          >
-            <ShoppingCart className="w-3.5 h-3.5 mr-1" />
-            Comprar
-          </Link>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              to={`/produto/${product.slug}`}
+              className="flex items-center justify-center py-2 px-3 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors duration-200"
+            >
+              <Info className="w-3.5 h-3.5 mr-1 text-slate-400" />
+              Detalhes
+            </Link>
+            <Link
+              to={`/produto/${product.slug}?checkout=true`}
+              className="flex items-center justify-center py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white transition-all duration-200 shadow-sm shadow-emerald-500/10 hover:shadow"
+              id={`buy-now-${product.id}`}
+            >
+              <ShoppingCart className="w-3.5 h-3.5 mr-1" />
+              Comprar
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
