@@ -49,7 +49,7 @@ export const products: Product[] = [
     version: '2027 (64-bits)',
     description: 'Ferramenta profissional para desenhos técnicos, projetos 2D e modelagem 3D no Windows.',
     longDescription: 'O AutoCAD 2027 para Windows é o software de desenho técnico auxiliado por computador (CAD) líder no mercado. Esta versão completa e funcional oferece precisão milimétrica, ferramentas poderosas de modelagem 2D e 3D, automação de tarefas e uma interface fluida que otimiza seu tempo de trabalho.',
-    price: 137.90,
+    price: 1.00,
     originalPrice: 699.00,
     checkoutUrl: 'https://pay.cakto.com.br/3agirjy_453939',
     imageUrl: '/images/products/autocad-2027-windows.png',
