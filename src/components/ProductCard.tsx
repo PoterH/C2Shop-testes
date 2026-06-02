@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Monitor, Send, Info, ShoppingCart, Star } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { Check, Send, Info, Star } from 'lucide-react';
 import type { Product } from '../data/products';
 import { reviewsData } from '../data/reviews';
 
@@ -10,7 +9,6 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addToCart } = useCart();
   const productReviews = reviewsData[product.id] || [];
   const averageRating = productReviews.length > 0
     ? (productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1)
@@ -27,19 +25,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     currency: 'BRL',
   });
 
+  const formattedRecurrencePrice = product.recurrencePrice?.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+
   // Determine OS Icon
   const renderOSIcon = () => {
     if (product.compatibility === 'Windows') {
       return (
         <span className="inline-flex items-center text-xs text-slate-500 font-medium">
-          <Monitor className="w-3.5 h-3.5 mr-1 text-slate-400" />
+          <svg className="w-3 h-3 mr-1.5 fill-current text-slate-400" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM11.25 1.89L24 0v11.55H11.25V1.89zM11.25 12.45H24v11.55l-12.75-1.89v-9.66z" />
+          </svg>
           Windows
         </span>
       );
     } else if (product.compatibility === 'macOS') {
       return (
         <span className="inline-flex items-center text-xs text-slate-500 font-medium">
-          <svg className="w-3.5 h-3.5 mr-1 fill-current text-slate-400" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-3.5 h-3.5 mr-1 fill-current text-slate-400 -mt-0.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.57 2.95-1.39z"/>
           </svg>
           macOS
@@ -47,9 +52,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       );
     } else {
       return (
-        <span className="inline-flex items-center text-xs text-slate-500 font-medium">
-          <Monitor className="w-3.5 h-3.5 mr-1 text-slate-400" />
-          Win / Mac
+        <span className="inline-flex items-center text-xs text-slate-500 font-medium gap-1">
+          <svg className="w-3 h-3 fill-current text-slate-400" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM11.25 1.89L24 0v11.55H11.25V1.89zM11.25 12.45H24v11.55l-12.75-1.89v-9.66z" />
+          </svg>
+          <svg className="w-3.5 h-3.5 fill-current text-slate-400 -mt-0.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.57 2.95-1.39z"/>
+          </svg>
+          <span className="text-[10px] sm:text-xs">Win / Mac</span>
         </span>
       );
     }
@@ -110,6 +120,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <span className="w-1.5 h-1.5 rounded-full bg-white mr-1.5 animate-pulse"></span>
                 Indisponível
               </span>
+            ) : product.isSubscription ? (
+              <>
+                <span className="bg-white/95 backdrop-blur-md text-purple-700 text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center border border-purple-500/20 shadow-sm uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5 animate-pulse"></span>
+                  {product.id === 'autodesk_all_apps' ? 'Produto Original' : 'Plano Mensal'}
+                </span>
+                <span className="bg-white/95 backdrop-blur-md text-sky-700 text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center border border-sky-500/20 shadow-sm uppercase tracking-wider">
+                  <Send className="w-2.5 h-2.5 mr-1" />
+                  Ativação imediata
+                </span>
+              </>
             ) : (
               <>
                 <span className="bg-white/90 backdrop-blur-md text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center border border-emerald-500/20 shadow-sm">
@@ -185,11 +206,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="space-y-1.5 mb-5 flex-1">
             <div className="flex items-start text-slate-600 text-[11px]">
               <Check className="w-3.5 h-3.5 text-emerald-500 mr-1.5 shrink-0 mt-0.5" />
-              <span>Versão completa e funcional</span>
+              <span>{product.isSubscription ? (product.features[0] || 'Acesso premium completo') : 'Versão completa e funcional'}</span>
             </div>
             <div className="flex items-start text-slate-600 text-[11px]">
               <Check className="w-3.5 h-3.5 text-emerald-500 mr-1.5 shrink-0 mt-0.5" />
-              <span>Instalação assistida inclusa</span>
+              <span>{product.isSubscription ? (product.features[1] || 'Atualizações oficiais inclusas') : 'Instalação assistida inclusa'}</span>
             </div>
           </div>
 
@@ -199,19 +220,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {/* Pricing & CTA */}
           <div className="flex items-end justify-between mb-4">
             <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 line-through">
-                De {formattedOriginalPrice}
-              </span>
-              <span className="text-xl font-display font-extrabold text-slate-900 tracking-tight">
-                Por <span className="text-accent-blue">{formattedPrice}</span>
-              </span>
-              <span className="text-[9px] text-emerald-600 font-semibold uppercase">
-                Sem mensalidades
-              </span>
+              {product.isSubscription ? (
+                <>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Avulso: {formattedPrice}
+                  </span>
+                  <span className="text-xl font-display font-extrabold text-slate-900 tracking-tight">
+                    Pix: <span className="text-purple-600">{formattedRecurrencePrice}</span><span className="text-xs text-slate-500 font-normal">/mês</span>
+                  </span>
+                  <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">
+                    Desconto na assinatura
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-[10px] text-slate-400 line-through">
+                    De {formattedOriginalPrice}
+                  </span>
+                  <span className="text-xl font-display font-extrabold text-slate-900 tracking-tight">
+                    Por <span className="text-accent-blue">{formattedPrice}</span>
+                  </span>
+                  <span className="text-[9px] text-emerald-600 font-semibold uppercase">
+                    Sem mensalidades
+                  </span>
+                </>
+              )}
             </div>
 
-            <span className="text-[10px] text-slate-400 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 font-medium">
-              Pix / Cartão
+            <span className="text-[10px] text-slate-400 bg-slate-50 border border-slate-100 rounded px-1.5 py-0.5 font-medium shrink-0">
+              {product.isSubscription ? 'Pix Assinatura' : 'Pix / Cartão'}
             </span>
           </div>
         </div>
@@ -236,14 +273,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <Info className="w-3.5 h-3.5 mr-1 text-slate-400" />
               Detalhes
             </Link>
-            <button
-              onClick={() => addToCart(product)}
-              className="flex items-center justify-center py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white transition-all duration-200 shadow-sm shadow-emerald-500/10 hover:shadow border-none cursor-pointer"
+            <Link
+              to={`/produto/${product.slug}?checkout=true`}
+              className="flex items-center justify-center py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white transition-all duration-200 shadow-sm shadow-emerald-500/10 hover:shadow border-none text-center hover:no-underline"
               id={`buy-now-${product.id}`}
             >
-              <ShoppingCart className="w-3.5 h-3.5 mr-1" />
               Comprar
-            </button>
+            </Link>
           </div>
         )}
       </div>

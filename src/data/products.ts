@@ -22,7 +22,12 @@ export interface Product {
   imageUrl?: string;
   unavailable?: boolean;
   appmaxSku?: string;
+  isSubscription?: boolean;
+  recurrencePrice?: number;
+  billingPeriod?: 'mensal' | 'anual';
+  selectedSubOption?: 'recurrent' | 'avulso';
 }
+
 
 export const CATEGORIES = [
   'Todos',
@@ -739,6 +744,122 @@ export const products: Product[] = [
     }
   },
   {
+    id: 'illustrator_2026',
+    slug: 'adobe-illustrator-2026',
+    name: 'Adobe Illustrator 2026',
+    category: 'Design e Criatividade',
+    compatibility: 'Windows',
+    version: '2026 (64-bits)',
+    description: 'Criação e edição de gráficos vetoriais, logotipos, ilustrações e layouts de página profissionais.',
+    longDescription: 'O Adobe Illustrator 2026 é o software de design de gráficos vetoriais padrão do setor, permitindo criar logotipos, ícones, desenhos, tipografia e ilustrações complexas para qualquer mídia. Esta versão completa e funcional oferece excelente rendimento local com aceleração de hardware.',
+    price: 97.00,
+    originalPrice: 499.00,
+    checkoutUrl: 'https://pay.cakto.com.br/ebyhwkz',
+    imageUrl: '/images/products/adobe-illustrator-2026.png',
+    features: [
+      'Versão completa e funcional',
+      'Acesso vitalício para uso ilimitado',
+      'Instalação assistida inclusa',
+      'Entrega automática no e-mail após o pagamento',
+      'Suporte remoto quando necessário',
+      'Pronto para uso imediato'
+    ],
+    requirements: {
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: 'Processador Intel ou AMD de múltiplos núcleos com suporte a 64 bits',
+      ram: '8 GB (Recomendável: 16 GB)',
+      gpu: 'Compatível com OpenGL 4.x / DirectX 12 com no mínimo 2 GB VRAM',
+      storage: '4 GB de espaço livre (SSD recomendado)'
+    }
+  },
+  {
+    id: 'premiere_2026',
+    slug: 'adobe-premiere-pro-2026',
+    name: 'Adobe Premiere Pro 2026',
+    category: 'Design e Criatividade',
+    compatibility: 'Windows',
+    version: '2026 (64-bits)',
+    description: 'Edição de vídeo profissional para cinema, TV e web com linha do tempo intuitiva e IA integrada.',
+    longDescription: 'O Adobe Premiere Pro 2026 é o software líder para edição de vídeo de alto nível em computadores Windows, offering ferramentas criativas robustas, integração com outros apps e uma engine potente de renderização em tempo real local.',
+    price: 97.00,
+    originalPrice: 499.00,
+    checkoutUrl: 'https://pay.cakto.com.br/y98ydjt',
+    imageUrl: '/images/products/adobe-premiere-pro-2026.png',
+    features: [
+      'Versão completa e funcional',
+      'Acesso vitalício para uso ilimitado',
+      'Instalação assistida inclusa',
+      'Entrega automática no e-mail após o pagamento',
+      'Suporte remoto quando necessário',
+      'Pronto para uso imediato'
+    ],
+    requirements: {
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: 'Intel Core i5 / AMD Ryzen 5 ou superior (Recomendado: i7/Ryzen 7)',
+      ram: '8 GB (Recomendado: 16 GB ou mais)',
+      gpu: 'Placa dedicada com suporte a DirectX 12 e mínimo de 2 GB VRAM',
+      storage: '8 GB de espaço livre (SSD recomendado)'
+    }
+  },
+  {
+    id: 'after_effects_2026',
+    slug: 'adobe-after-effects-2026',
+    name: 'Adobe After Effects 2026',
+    category: 'Design e Criatividade',
+    compatibility: 'Windows',
+    version: '2026 (64-bits)',
+    description: 'Criação de efeitos visuais cinematográficos, motion graphics e composições digitais.',
+    longDescription: 'O Adobe After Effects 2026 é o padrão da indústria para animações e efeitos visuais digitais. Crie introduções profissionais, transições animadas e composições fotorrealistas de forma estável no Windows.',
+    price: 97.00,
+    originalPrice: 499.00,
+    checkoutUrl: 'https://pay.cakto.com.br/bm6mauf',
+    imageUrl: '/images/products/adobe-after-effects-2026.png',
+    features: [
+      'Versão completa e funcional',
+      'Acesso vitalício para uso ilimitado',
+      'Instalação assistida inclusa',
+      'Entrega automática no e-mail após o pagamento',
+      'Suporte remoto quando necessário',
+      'Pronto para uso imediato'
+    ],
+    requirements: {
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: 'Processador Intel ou AMD de múltiplos núcleos com suporte a 64 bits',
+      ram: '16 GB (Recomendado: 32 GB)',
+      gpu: 'Placa de vídeo dedicada de no mínimo 2 GB VRAM com suporte a DirectX 12',
+      storage: '15 GB de espaço livre (SSD recomendado)'
+    }
+  },
+  {
+    id: 'lightroom_classic_2026',
+    slug: 'adobe-lightroom-classic-2026',
+    name: 'Adobe Lightroom Classic 2026',
+    category: 'Design e Criatividade',
+    compatibility: 'Windows',
+    version: '2026 (64-bits)',
+    description: 'Organização, revelação rápida e edição profissional de fotografias e arquivos RAW.',
+    longDescription: 'O Adobe Lightroom Classic 2026 oferece ferramentas avançadas de tratamento e revelação de fotos, com fluxos eficientes locais para organizar e processar arquivos fotográficos pesados com total precisão.',
+    price: 97.00,
+    originalPrice: 499.00,
+    checkoutUrl: 'https://pay.cakto.com.br/je5uy6x',
+    imageUrl: '/images/products/adobe-lightroom-classic-2026.png',
+    features: [
+      'Versão completa e funcional',
+      'Acesso vitalício para uso ilimitado',
+      'Instalação assistida inclusa',
+      'Entrega automática no e-mail após o pagamento',
+      'Suporte remoto quando necessário',
+      'Pronto para uso imediato'
+    ],
+    requirements: {
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: 'Intel ou AMD de múltiplos núcleos com suporte a 64 bits (2 GHz ou superior)',
+      ram: '8 GB (Recomendado: 16 GB)',
+      gpu: 'Placa dedicada com suporte a DirectX 12 e mínimo de 2 GB VRAM',
+      storage: '4 GB de espaço livre'
+    }
+  },
+  {
     id: 'proteus_9',
     slug: 'proteus-9-professional',
     name: 'Proteus 9 Professional Design Suite',
@@ -910,6 +1031,129 @@ export const products: Product[] = [
       ram: '4 GB RAM (Recomendável: 8 GB)',
       gpu: 'Placa de vídeo compatível com DirectX 9 ou superior',
       storage: '2 GB de espaço livre'
+    }
+  },
+  {
+    id: 'wondershare_recoverit_13',
+    slug: 'wondershare-recoverit-13',
+    name: 'Wondershare Recoverit 13',
+    category: 'Escritório e Produtividade',
+    compatibility: 'Windows',
+    version: '13.0.0',
+    description: 'Software profissional de recuperação de dados e restauração de arquivos excluídos.',
+    longDescription: 'O Wondershare Recoverit 13 para Windows é um software profissional de recuperação de dados líder de mercado. Ele possui uma taxa de recuperação de 95% e suporta a restauração de mais de 1000 formatos de arquivos (incluindo fotos, vídeos, documentos e e-mails) de quase todos os tipos de dispositivos de armazenamento: discos rígidos (HDD/SSD), pen drives, cartões de memória, além de sistemas de arquivos danificados ou formatados de forma acidental.',
+    price: 127.90,
+    originalPrice: 499.00,
+    checkoutUrl: 'https://pay.cakto.com.br/3dqe23f',
+    imageUrl: '/images/products/wondershare-recoverit-13.png',
+    features: [
+      'Versão completa e funcional',
+      'Acesso vitalício para uso ilimitado',
+      'Instalação assistida inclusa',
+      'Entrega automática no e-mail após o pagamento',
+      'Suporte remoto quando necessário',
+      'Pronto para uso imediato'
+    ],
+    requirements: {
+      os: 'Windows 10 ou 11 (64-bits)',
+      cpu: '1 GHz ou superior',
+      ram: '4 GB RAM (Recomendável: 8 GB)',
+      gpu: 'Placa de vídeo padrão',
+      storage: '2 GB de espaço livre'
+    }
+  },
+  {
+    id: 'capcut_pro_mensal',
+    slug: 'capcut-pro-mensal',
+    name: 'CapCut Pro Mensal',
+    category: 'Design e Criatividade',
+    compatibility: 'Windows e macOS',
+    version: 'Pro Mensal',
+    description: 'Assinatura mensal do CapCut Pro. Crie vídeos profissionais com recursos avançados e efeitos exclusivos.',
+    longDescription: 'O CapCut Pro Mensal oferece acesso completo a todos os recursos premium do editor de vídeos mais popular do momento. Tenha acesso a modelos exclusivos, efeitos avançados de transição, animações premium, remoção automática de fundo por IA, legendas automáticas inteligentes e muito mais. Ideal para criadores de conteúdo que buscam qualidade profissional de forma rápida e prática.',
+    price: 47.90,
+    originalPrice: 59.90,
+    checkoutUrl: 'https://pay.cakto.com.br/capcut-pro-mensal',
+    imageUrl: '/images/products/capcut-pro-mensal.png',
+    isSubscription: true,
+    recurrencePrice: 37.90,
+    billingPeriod: 'mensal',
+    features: [
+      'Acesso Pro completo',
+      'Modelos e efeitos exclusivos',
+      'Recursos avançados de IA (Legendas, Corte)',
+      'Exportação em até 4K 60fps',
+      'Suporte a múltiplos dispositivos',
+      'Atualizações inclusas'
+    ],
+    requirements: {
+      os: 'Windows 10/11 ou macOS 10.15+',
+      cpu: 'Intel Core i3 / Apple Silicon',
+      ram: '8 GB RAM',
+      gpu: 'Placa integrada de vídeo',
+      storage: '2 GB de espaço livre'
+    }
+  },
+  {
+    id: 'canva_pro_mensal',
+    slug: 'canva-pro-mensal',
+    name: 'Canva Pro Mensal',
+    category: 'Design e Criatividade',
+    compatibility: 'Windows e macOS',
+    version: 'Pro Mensal',
+    description: 'Assinatura mensal do Canva Pro. Crie designs profissionais utilizando seu próprio perfil pessoal.',
+    longDescription: 'O Canva Pro Mensal é a solução ideal para designers, profissionais de marketing e criadores de conteúdo. O acesso é enviado por um link de convite oficial, o que significa que você não precisa fornecer nenhuma senha: você ativa o Canva Pro diretamente na sua conta pessoal existente, mantendo todos os seus designs e projetos 100% seguros e privados. Tenha acesso ilimitado a mais de 100 milhões de fotos, vídeos, elementos gráficos e ferramentas mágicas de IA.',
+    price: 19.90,
+    originalPrice: 29.90,
+    checkoutUrl: 'https://pay.cakto.com.br/canva-pro-mensal',
+    imageUrl: '/images/products/canva-pro-mensal.png',
+    isSubscription: true,
+    recurrencePrice: 9.90,
+    billingPeriod: 'mensal',
+    features: [
+      'Ativação em sua conta pessoal (sem fornecer senha)',
+      'Acesso oficial via link de convite',
+      'Mais de 100 milhões de assets premium',
+      'Remoção de fundo instantânea e Kit de Marca',
+      'Redimensionamento mágico e ferramentas de IA',
+      'Planejador de conteúdo integrado'
+    ],
+    requirements: {
+      os: 'Windows, macOS, iOS ou Android',
+      cpu: 'Qualquer processador compatível com navegador',
+      ram: '4 GB RAM',
+      gpu: 'Qualquer placa de vídeo',
+      storage: 'Acesso via Web (sem espaço em disco necessário)'
+    }
+  },
+  {
+    id: 'autodesk_all_apps',
+    slug: 'autodesk-all-apps',
+    name: 'Autodesk All Apps',
+    category: 'Engenharia e Arquitetura',
+    compatibility: 'Windows e macOS',
+    version: '2025/2026/2027',
+    description: 'Assinatura Autodesk All Apps. Acesso completo e oficial a mais de 80 softwares da Autodesk (AutoCAD, Revit, Inventor, Maya, 3ds Max).',
+    longDescription: 'O Autodesk All Apps oferece acesso completo a mais de 80 softwares oficiais da Autodesk. Você receberá credenciais de acesso exclusivas e privadas (login e senha) para utilizar as ferramentas de forma 100% privativa e profissional. O plano inclui atualizações oficiais constantes, suporte completo e acesso direto. Necessário entrar em contato com o nosso suporte via WhatsApp após a compra para receber as suas credenciais privadas de login.',
+    price: 89.90,
+    originalPrice: 199.90,
+    checkoutUrl: 'https://pay.cakto.com.br/sweaaho_448678',
+    imageUrl: '/images/products/autodesk-all-apps.png',
+    isSubscription: true,
+    recurrencePrice: 69.90,
+    billingPeriod: 'mensal',
+    features: [
+      'Acesso privado com credenciais exclusivas (login e senha)',
+      'Todos os 86 softwares Autodesk inclusos',
+      'Atualizações oficiais e suporte direto da Autodesk',
+      'Ativação via suporte (necessário entrar em contato)'
+    ],
+    requirements: {
+      os: 'Windows 10/11 ou macOS 12+',
+      cpu: 'Intel Core i5 / AMD Ryzen 5 ou superior',
+      ram: '8 GB (Recomendado 16 GB+)',
+      gpu: 'Placa dedicada com suporte a DirectX 12',
+      storage: '50 GB de espaço livre'
     }
   }
 ];

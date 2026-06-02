@@ -5,6 +5,10 @@ export const DOWNLOAD_LINKS: Record<string, string> = {
   'inventor-professional-2027': 'https://drive.google.com/open?id=1iczqn4y2-Tvdx4Vp9WjhAslvqM4mM9FK',
   'navisworks-manage-2027': 'https://drive.google.com/open?id=1l4jt7SCth0Pa9niPHAN0NUgvvxw7t1tD',
   'adobe-photoshop-2026': 'https://drive.google.com/open?id=1_idfhrAAsyUoRd8US1rISgzE-P9C9wxI',
+  'adobe-illustrator-2026': 'https://drive.google.com/drive/folders/1wfikDovRV2Z6hx8Gibv47zsta5eaxlfE?usp=sharing',
+  'adobe-after-effects-2026': 'https://drive.google.com/drive/folders/1n7IMbAMrKMrph3SAClqZjA-lWKu7aEef?usp=sharing',
+  'adobe-lightroom-classic-2026': 'https://drive.google.com/drive/folders/1e496p9h2z0Ri0npC8wKdHDgl19jJtCtz?usp=sharing',
+  'adobe-premiere-pro-2026': 'https://drive.google.com/drive/folders/1ouOI2kE9ykUWhbIRKVErLdt8wT-7lUzP?usp=sharing',
   'coreldraw-graphics-suite-2026-macos': 'https://drive.google.com/open?id=1TQFGgnqH3v1kylnnb2GYynnHCfBf-9kF',
   'promob-plus-professional-2025': 'https://drive.google.com/open?id=1KHkh6hTxa_630LoQwoH41EvRNO_WJWhP',
   'archicad-29-bra': 'https://drive.google.com/open?id=1TnHlZ7orSkt2yYlIEiJ9aKdJEPA2TKhY',
@@ -29,6 +33,10 @@ export const DOWNLOAD_LINKS: Record<string, string> = {
   'parallels-desktop-26': 'https://drive.google.com/drive/folders/1wkOyx2Vjh7y-IPWCiW-u5JK0XcYRp6ld?usp=drive_link',
   'camtasia-2026': 'https://drive.google.com/drive/folders/1RodJmSK5LFS3mquN4bs0bWYzidQPb2vF?usp=drive_link',
   'pdfelement-12': 'https://drive.google.com/drive/folders/13nKtmJD-DSppbgEVVzpgW4hqx2yUALvw?usp=drive_link',
+  'wondershare-recoverit-13': 'https://drive.google.com/drive/folders/1TyHzITakSn9JiRIrxMtjXClwMzC4z4TP?usp=drive_link',
+  'capcut-pro-mensal': 'https://wa.me/5581997349300?text=Olá,%20acabei%20de%20assinar%20o%20CapCut%20Pro%20Mensal%20e%20gostaria%20de%20ativar%20minha%20conta.',
+  'canva-pro-mensal': 'https://wa.me/5581997349300?text=Olá,%20acabei%20de%20assinar%20o%20Canva%20Pro%20Mensal%20e%20gostaria%20de%20ativar%20minha%20conta.',
+  'autodesk-all-apps': 'https://wa.me/5581997349300?text=Olá,%20acabei%20de%20assinar%20o%20Autodesk%20All%20Apps%20e%20gostaria%20de%20ativar%20minha%20conta.',
 };
 
 export function getDownloadLink(slug: string): string {

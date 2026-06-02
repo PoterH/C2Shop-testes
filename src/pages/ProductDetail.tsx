@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { useCart } from '../context/CartContext';
 import { getProductBySlug } from '../data/products';
@@ -7,7 +7,6 @@ import {
   Check, 
   ShieldCheck, 
   MessageSquare, 
-  ShoppingCart, 
   Monitor, 
   ChevronRight, 
   ArrowLeft,
@@ -19,7 +18,18 @@ export const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'recurrent' | 'avulso'>('recurrent');
   const { addToCart } = useCart();
+  const location = useLocation();
+  const hasProcessedCheckoutRef = useRef(false);
+
+  useEffect(() => {
+    setSelectedPlan('recurrent');
+  }, [slug]);
+
+  useEffect(() => {
+    hasProcessedCheckoutRef.current = false;
+  }, [location.pathname]);
 
   const product = useMemo(() => {
     if (!slug) return undefined;
@@ -38,13 +48,14 @@ export const ProductDetail: React.FC = () => {
   }, [productReviews]);
 
   useEffect(() => {
-    if (searchParams.get('checkout') === 'true' && !product?.unavailable) {
-      setIsCheckoutOpen(true);
+    if (searchParams.get('checkout') === 'true' && !product?.unavailable && product && !hasProcessedCheckoutRef.current) {
+      hasProcessedCheckoutRef.current = true;
+      addToCart(product);
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('checkout');
       setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, product]);
+  }, [searchParams, setSearchParams, product, addToCart]);
 
   const renderStars = (rating: number) => {
     return (
@@ -66,12 +77,15 @@ export const ProductDetail: React.FC = () => {
   // Set document title for SEO
   useEffect(() => {
     if (product) {
-      document.title = `${product.name} Acesso Vitalício | C2Tech`;
+      const typeLabel = product.isSubscription ? 'Assinatura Mensal' : 'Acesso Vitalício';
+      document.title = `${product.name} ${typeLabel} | C2Shop`;
       
-      // Update meta description dynamically if needed (done through index.html originally, here dynamically)
       const metaDescription = document.querySelector('meta[name="description"]');
       if (metaDescription) {
-        metaDescription.setAttribute('content', `Adquira o ${product.name} com licença alternativa e acesso vitalício na C2Tech. Entrega automática por e-mail e suporte assistido inclusos.`);
+        const descText = product.isSubscription 
+          ? `Assine o ${product.name} Pro Mensal com o melhor preço e desconto no Pix. Acesso completo aos recursos premium e suporte prioritário.`
+          : `Adquira o ${product.name} com licença alternativa e acesso vitalício na C2Shop. Entrega automática por e-mail e suporte assistido inclusos.`;
+        metaDescription.setAttribute('content', descText);
       }
     }
   }, [product]);
@@ -106,6 +120,13 @@ export const ProductDetail: React.FC = () => {
     currency: 'BRL',
   });
 
+  const formattedRecurrencePrice = product.recurrencePrice?.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+
+
+
   const whatsappNumber = '5581997349300'; // Substitua pelo seu número real do WhatsApp
   const whatsappMessage = encodeURIComponent(`Olá, tenho interesse no software ${product.name} e gostaria de tirar uma dúvida sobre a compatibilidade ou instalação.`);
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
@@ -139,7 +160,7 @@ export const ProductDetail: React.FC = () => {
       >
         <div className="space-y-2">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
-            Licença Alternativa
+            {product.isSubscription ? 'Plano de Assinatura' : 'Licença Alternativa'}
           </span>
           <h3 className="font-display font-extrabold text-2xl text-slate-950">
             {product.name}
@@ -171,47 +192,104 @@ export const ProductDetail: React.FC = () => {
             ) : (
               <span className="flex items-center text-emerald-600 font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                Em estoque para entrega imediata
+                Ativação imediata pós confirmação
               </span>
             )}
           </div>
         </div>
 
+
+
         {/* Price Details */}
-        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
-          <div className="space-y-1">
-            <p className="text-xs text-slate-400 line-through">De {formattedOriginalPrice}</p>
-            <p className="text-2xl sm:text-3xl font-display font-black text-slate-950">
-              Por <span className="text-accent-blue">{formattedPrice}</span>
-            </p>
-            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
-              Pagamento Único. Sem Mensalidade.
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <span className="bg-emerald-500/10 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg border border-emerald-500/10">
-              Desconto de 80%
-            </span>
-          </div>
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-3">
+          {product.isSubscription ? (
+            <div className="space-y-3 w-full text-left">
+              <span className="text-[10px] font-bold text-slate-450 text-slate-400 uppercase tracking-widest block font-sans">
+                Escolha o seu plano
+              </span>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Option 1: Recorrente (Destaque) */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan('recurrent')}
+                  className={`relative flex flex-col justify-between p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all ${
+                    selectedPlan === 'recurrent'
+                      ? 'border-emerald-500 bg-emerald-500/5 shadow-sm'
+                      : 'border-slate-200 bg-white hover:bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-start w-full">
+                    <span className="text-[10px] font-bold text-slate-700">Assinatura Mensal</span>
+                    <span className="bg-emerald-500 text-white text-[8px] font-extrabold px-1 rounded uppercase tracking-wider">
+                      Destaque
+                    </span>
+                  </div>
+                  <p className="text-base font-display font-black text-slate-950 mt-1.5">
+                    {formattedRecurrencePrice} <span className="text-[10px] text-slate-400 font-normal">/mês</span>
+                  </p>
+                  <p className="text-[9px] text-slate-400 mt-1 leading-tight font-medium">
+                    Apenas no Cartão
+                  </p>
+                </button>
+
+                {/* Option 2: Pagamento Único */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan('avulso')}
+                  className={`flex flex-col justify-between p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all ${
+                    selectedPlan === 'avulso'
+                      ? 'border-accent-blue bg-accent-blue/5 shadow-sm'
+                      : 'border-slate-200 bg-white hover:bg-slate-50/50'
+                  }`}
+                >
+                  <span className="text-[10px] font-bold text-slate-700">Pagamento Único</span>
+                  <p className="text-base font-display font-black text-slate-950 mt-1.5">
+                    {formattedPrice}
+                  </p>
+                  <p className="text-[9px] text-slate-400 mt-1 leading-tight font-medium">
+                    Pix, Cartão ou Boleto
+                  </p>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center w-full">
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400 line-through">De {formattedOriginalPrice}</p>
+                <p className="text-2xl sm:text-3xl font-display font-black text-slate-950">
+                  Por <span className="text-accent-blue">{formattedPrice}</span>
+                </p>
+                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
+                  Pagamento Único. Sem Mensalidade.
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="bg-emerald-500/10 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg border border-emerald-500/10">
+                  Desconto de 80%
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Trust highlights */}
         <ul className="space-y-2.5 text-xs text-slate-600">
           <li className="flex items-center">
             <Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
-            <span>Entrega automática por e-mail</span>
+            <span>{product.isSubscription ? (product.id === 'canva_pro_mensal' ? 'Ativação direta na sua conta pessoal' : 'Envio imediato de credenciais privadas') : 'Entrega automática por e-mail'}</span>
           </li>
           <li className="flex items-center">
             <Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
-            <span>Passo a passo de instalação ilustrado</span>
+            <span>{product.isSubscription ? (product.id === 'canva_pro_mensal' ? 'Acesso via convite oficial sem senhas' : 'Suporte técnico de ativação incluso') : 'Passo a passo de instalação ilustrado'}</span>
           </li>
           <li className="flex items-center">
             <Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
-            <span>Acesso vitalício para uso ilimitado</span>
+            <span>{product.isSubscription ? 'Recursos Premium Pro liberados' : 'Acesso vitalício para uso ilimitado'}</span>
           </li>
           <li className="flex items-center">
             <Check className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
-            <span>Suporte remoto quando necessário</span>
+            <span>Suporte prioritário via WhatsApp</span>
           </li>
         </ul>
 
@@ -225,24 +303,15 @@ export const ProductDetail: React.FC = () => {
               Temporariamente indisponível
             </button>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="w-full">
               <button
                 onClick={() => {
-                  addToCart(product);
-                  setIsCheckoutOpen(true);
+                  addToCart(product, selectedPlan);
                 }}
-                className="flex-grow flex-[2] flex items-center justify-center py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl text-center shadow-lg transition-all cursor-pointer border-none font-display text-sm"
+                className="w-full flex items-center justify-center py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl text-center shadow-lg transition-all cursor-pointer border-none font-display text-base"
                 id={`detail-buy-now-${product.id}`}
               >
                 Comprar agora
-              </button>
-              <button
-                onClick={() => addToCart(product)}
-                className="flex-grow flex-1 flex items-center justify-center py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-center shadow transition-all cursor-pointer border-none font-display text-sm"
-                id={`detail-add-to-cart-${product.id}`}
-              >
-                <ShoppingCart className="w-5 h-5 mr-2 shrink-0" />
-                Adicionar ao Carrinho
               </button>
             </div>
           )}
@@ -265,8 +334,18 @@ export const ProductDetail: React.FC = () => {
             Checkout Seguro e Criptografado
           </p>
           <div className="flex items-center justify-center gap-1.5 opacity-60">
-            <span className="px-1 border border-slate-200 rounded">PIX</span>
-            <span className="px-1 border border-slate-200 rounded">CARTÃO</span>
+            {product.isSubscription ? (
+              <>
+                <span className="px-1 border border-slate-200 rounded">CARTÃO</span>
+                <span className="px-1 border border-slate-200 rounded">BOLETO</span>
+              </>
+            ) : (
+              <>
+                <span className="px-1 border border-slate-200 rounded">PIX</span>
+                <span className="px-1 border border-slate-200 rounded">CARTÃO</span>
+                <span className="px-1 border border-slate-200 rounded">BOLETO</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -341,10 +420,17 @@ export const ProductDetail: React.FC = () => {
 
               {/* General details */}
               <div className="space-y-4 flex-1">
-                <span className="bg-emerald-500/10 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-flex items-center border border-emerald-500/10">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>
-                  Acesso vitalício
-                </span>
+                {product.isSubscription ? (
+                  <span className="bg-purple-500/10 text-purple-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-flex items-center border border-purple-500/10 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-2"></span>
+                    {product.id === 'autodesk_all_apps' ? 'Produto Original' : 'Plano Mensal'}
+                  </span>
+                ) : (
+                  <span className="bg-emerald-500/10 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-flex items-center border border-emerald-500/10">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>
+                    Acesso vitalício
+                  </span>
+                )}
                 
                 <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 leading-tight">
                   {product.name}
@@ -388,7 +474,7 @@ export const ProductDetail: React.FC = () => {
                 ))}
                 <div className="flex items-start text-slate-700 text-sm">
                   <Check className="w-5 h-5 text-emerald-500 mr-2 shrink-0 mt-0.5" />
-                  <span>Guia de instalação ilustrado passo a passo</span>
+                  <span>{product.isSubscription ? 'Instruções simples de acesso e suporte premium' : 'Guia de instalação ilustrado passo a passo'}</span>
                 </div>
               </div>
             </div>
@@ -456,19 +542,33 @@ export const ProductDetail: React.FC = () => {
                 <div className="relative">
                   <span className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-900 border-4 border-white"></span>
                   <h4 className="text-sm font-bold text-slate-900">2. Envio automático por E-mail</h4>
-                  <p className="text-slate-500 text-xs mt-0.5">Confirmado o pagamento, o sistema envia o e-mail contendo os links de acesso imediatamente.</p>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    {product.isSubscription 
+                      ? 'Confirmado o pagamento, o sistema envia as credenciais de login e senha imediatamente por e-mail.' 
+                      : 'Confirmado o pagamento, o sistema envia o e-mail contendo os links de acesso imediatamente.'}
+                  </p>
                 </div>
 
                 <div className="relative">
                   <span className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-900 border-4 border-white"></span>
-                  <h4 className="text-sm font-bold text-slate-900">3. Acesso aos arquivos e guias</h4>
-                  <p className="text-slate-500 text-xs mt-0.5">O e-mail contém os arquivos de instalação e tutoriais passo a passo simples de executar.</p>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {product.isSubscription ? '3. Acesso à conta oficial' : '3. Acesso aos arquivos e guias'}
+                  </h4>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    {product.isSubscription 
+                      ? 'O e-mail contém o usuário e a senha para acessar a plataforma oficial (no computador, celular ou navegador).' 
+                      : 'O e-mail contém os arquivos de instalação e tutoriais passo a passo simples de executar.'}
+                  </p>
                 </div>
 
                 <div className="relative">
                   <span className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-emerald-500 border-4 border-white animate-pulse"></span>
                   <h4 className="text-sm font-bold text-slate-900 text-emerald-700">4. Suporte Assistido Completo</h4>
-                  <p className="text-slate-500 text-xs mt-0.5">Se tiver qualquer tipo de dúvida ou dificuldade na instalação, nossa equipe técnica auxilia remotamente.</p>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    {product.isSubscription 
+                      ? 'Se tiver qualquer tipo de dúvida ou dificuldade para acessar a conta, nossa equipe técnica auxilia rapidamente via WhatsApp.' 
+                      : 'Se tiver qualquer tipo de dúvida ou dificuldade na instalação, nossa equipe técnica auxilia remotamente.'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -551,14 +651,60 @@ export const ProductDetail: React.FC = () => {
               </h4>
               
               <div className="space-y-3.5 text-xs">
-                <div className="space-y-1">
-                  <p className="font-semibold text-slate-800">O software expira?</p>
-                  <p className="text-slate-500 leading-relaxed">Não. Trata-se de uma versão completa e funcional com acesso vitalício, sem taxas de renovação.</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="font-semibold text-slate-800">Posso reinstalar se trocar de computador?</p>
-                  <p className="text-slate-500 leading-relaxed">Sim. O link enviado por e-mail permanece ativo para reinstalação futura caso formate ou substitua seu computador.</p>
-                </div>
+                {product.id === 'autodesk_all_apps' ? (
+                  <>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">Como funciona o acesso?</p>
+                      <p className="text-slate-500 leading-relaxed">
+                        Você receberá as credenciais de login e senha exclusivos para acessar a conta oficial da ferramenta de forma 100% privada e segura. A ativação é feita diretamente em contato com o nosso suporte via WhatsApp após a confirmação do pagamento.
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">Quais tipos de assinatura estão disponíveis?</p>
+                      <p className="text-slate-500 leading-relaxed">
+                        Oferecemos o Plano Mensal Recorrente (pagamento exclusivo no Pix para maior economia), Plano Mensal Compra Única (acesso de 30 dias) e os planos de licença de longo prazo de 12, 24 e 36 meses (pagos no cartão de crédito via Cakto).
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">O que está incluso na assinatura?</p>
+                      <p className="text-slate-500 leading-relaxed">
+                        Todos os benefícios de uma assinatura original: acesso oficial a todos os 86 softwares da Autodesk com atualizações automáticas oficiais e suporte direto.
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">Quais são os principais softwares inclusos no pacote?</p>
+                      <p className="text-slate-500 leading-relaxed">
+                        Estão inclusos os principais e mais procurados softwares da Autodesk, como: <strong>AutoCAD</strong>, <strong>Revit</strong>, <strong>Inventor Professional</strong>, <strong>Maya</strong>, <strong>3ds Max</strong>, <strong>Civil 3D</strong>, <strong>Navisworks Manage</strong>, entre outros.
+                      </p>
+                    </div>
+                  </>
+                ) : product.isSubscription ? (
+                  <>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">Como funciona o acesso?</p>
+                      <p className="text-slate-500 leading-relaxed">
+                        Você receberá as credenciais de login e senha exclusivos no seu e-mail para acessar a conta oficial da ferramenta.
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">A assinatura expira?</p>
+                      <p className="text-slate-500 leading-relaxed">
+                        Sim, a expiração é de 30 dias e a assinatura se renova mensalmente. Caso precise trocar de dados ou suporte, nossa equipe realiza a substituição.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">O software expira?</p>
+                      <p className="text-slate-500 leading-relaxed">Não. Trata-se de uma versão completa e funcional com acesso vitalício, sem taxas de renovação.</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800">Posso reinstalar se trocar de computador?</p>
+                      <p className="text-slate-500 leading-relaxed">Sim. O link enviado por e-mail permanece ativo para reinstalação futura caso formate ou substitua seu computador.</p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -572,6 +718,7 @@ export const ProductDetail: React.FC = () => {
         product={product}
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
+        initialSubOption={selectedPlan}
       />
     </div>
   );

@@ -16,7 +16,7 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const { txid, productSlug, products: items, buyer } = req.body;
+  const { txid, productSlug, products: items, buyer, subOption } = req.body;
 
   if (!txid || (!productSlug && (!items || !Array.isArray(items))) || !buyer || !buyer.email || !buyer.name) {
     return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes' });
@@ -71,11 +71,19 @@ export default async function handler(req: any, res: any) {
     const emailResult = await sendConfirmationEmail({
       buyerName: buyer.name,
       buyerEmail: buyer.email,
-      products: matchedProducts.map(p => ({
-        slug: p.slug,
-        name: p.name,
-        price: p.price * 0.98 // Aplica desconto do Pix (2%) para exibir o valor correto do recibo
-      })),
+      products: matchedProducts.map(p => {
+        let finalPrice = p.price;
+        if (p.isSubscription) {
+          finalPrice = subOption === 'recurrent' ? (p.recurrencePrice || p.price) : p.price;
+        } else {
+          finalPrice = p.price * 0.98; // Aplica desconto do Pix (2%) para exibir o valor correto do recibo
+        }
+        return {
+          slug: p.slug,
+          name: p.name,
+          price: finalPrice
+        };
+      }),
       orderId: txid,
       paymentMethod: 'pix'
     });

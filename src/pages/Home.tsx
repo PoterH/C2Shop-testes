@@ -38,12 +38,19 @@ export const Home: React.FC = () => {
   }, []);
 
   // Filter products for the landing page grid (show max 16 of active category)
-  const filteredProducts = products.filter(p => 
-    activeCategory === 'Todos' || p.category === activeCategory
-  ).slice(0, 16);
+  const filteredProducts = products
+    .filter(p => !p.isSubscription && (activeCategory === 'Todos' || p.category === activeCategory))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+    .slice(0, 16);
+
+  // Filter subscription products for the dedicated carousel
+  const subscriptionProducts = products
+    .filter(p => p.isSubscription)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   const [isPlaying, setIsPlaying] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const subCarouselRef = useRef<HTMLDivElement>(null);
 
   // Reset scroll to 0 when category changes
   useEffect(() => {
@@ -83,6 +90,22 @@ export const Home: React.FC = () => {
 
   const scrollRight = () => {
     const el = carouselRef.current;
+    if (el) {
+      const scrollAmount = 320 + 24;
+      el.scrollTo({ left: el.scrollLeft + scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const scrollSubLeft = () => {
+    const el = subCarouselRef.current;
+    if (el) {
+      const scrollAmount = 320 + 24;
+      el.scrollTo({ left: el.scrollLeft - scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const scrollSubRight = () => {
+    const el = subCarouselRef.current;
     if (el) {
       const scrollAmount = 320 + 24;
       el.scrollTo({ left: el.scrollLeft + scrollAmount, behavior: 'smooth' });
@@ -280,12 +303,22 @@ export const Home: React.FC = () => {
           </div>
 
           {/* 4. Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md sm:max-w-2xl pt-0 md:pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md sm:max-w-3xl pt-0 md:pt-4">
             <Link
               to="/catalogo"
               className="flex items-center justify-center px-8 py-4 md:px-12 md:py-5 text-base md:text-lg lg:text-xl font-bold text-white bg-accent-blue hover:bg-accent-blue-dark rounded-2xl md:rounded-3xl shadow-[0_4px_20px_rgba(2,132,199,0.25)] hover:shadow-[0_4px_25px_rgba(2,132,199,0.35)] transition-all duration-300 group whitespace-nowrap hover:scale-105 active:scale-95"
             >
               <span>Explorar softwares</span>
+              <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2.5 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <Link
+              to="/catalogo?tab=assinaturas"
+              className="flex items-center justify-center px-8 py-4 md:px-12 md:py-5 text-base md:text-lg lg:text-xl font-bold text-white bg-slate-900/60 backdrop-blur-md hover:bg-slate-900/80 rounded-2xl md:rounded-3xl border border-sky-500/30 hover:border-sky-500/60 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_25px_rgba(2,132,199,0.15)] transition-all duration-300 group whitespace-nowrap hover:scale-105 active:scale-95"
+            >
+              <span>Planos de Assinatura</span>
+              <span className="ml-2.5 px-2 py-0.5 text-[10px] font-extrabold bg-sky-500 text-white rounded-md uppercase tracking-wider animate-pulse shrink-0">
+                Novo
+              </span>
               <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2.5 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
@@ -444,6 +477,87 @@ export const Home: React.FC = () => {
             >
               <span>Ver catálogo de softwares completo</span>
               <ArrowRight className="w-4 h-4 ml-2 text-slate-500" />
+            </Link>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 3.5 PREMIUM SUBSCRIPTION CAROUSEL SECTION */}
+      <section className="py-20 bg-gradient-to-b from-[#090d16] to-[#05070c] relative overflow-hidden border-b border-slate-900">
+        {/* Subtle glowing ambient lights */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-r from-purple-500/10 to-sky-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute -right-32 bottom-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
+            <div className="inline-flex items-center space-x-2 bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+              <span>Novidade</span>
+            </div>
+            <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight">
+              Planos de Assinatura Mensal
+            </h2>
+            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+              Acesse ferramentas de design e criação líderes de mercado como <strong className="text-white font-semibold">Canva Pro</strong> e <strong className="text-white font-semibold">CapCut Pro</strong>. Sem fidelidade, com faturamento simplificado no Pix e suporte completo incluso.
+            </p>
+          </div>
+
+          {/* Subscription Carousel */}
+          {subscriptionProducts.length > 0 ? (
+            <div className="relative group/sub-carousel w-full">
+              {/* Left Navigation Arrow */}
+              {subscriptionProducts.length > 2 && (
+                <button
+                  onClick={scrollSubLeft}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 z-30 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-white shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none opacity-0 group-hover/sub-carousel:opacity-100 focus-visible:opacity-100"
+                  aria-label="Anterior"
+                >
+                  <ChevronLeft className="w-5 h-5 text-white" />
+                </button>
+              )}
+
+              {/* Scrollable Container */}
+              <div
+                ref={subCarouselRef}
+                className={`flex overflow-x-auto gap-6 pb-6 pt-2 px-1 scroll-smooth scrollbar-none snap-x snap-mandatory ${
+                  subscriptionProducts.length <= 2 ? 'md:justify-center' : ''
+                }`}
+              >
+                {subscriptionProducts.map((product) => (
+                  <div key={product.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start flex flex-col">
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Navigation Arrow */}
+              {subscriptionProducts.length > 2 && (
+                <button
+                  onClick={scrollSubRight}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 z-30 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-white shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none opacity-0 group-hover/sub-carousel:opacity-100 focus-visible:opacity-100"
+                  aria-label="Próximo"
+                >
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-slate-900/40 rounded-3xl border border-slate-800">
+              <p className="text-slate-500 text-sm font-medium">Nenhuma assinatura cadastrada no momento.</p>
+            </div>
+          )}
+
+          {/* View Catalog Button */}
+          <div className="text-center mt-12">
+            <Link
+              to="/catalogo?tab=assinaturas"
+              className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-sm font-bold text-white shadow-[0_4px_20px_rgba(147,51,234,0.25)] hover:shadow-[0_4px_25px_rgba(147,51,234,0.35)] transition-all duration-200 group"
+            >
+              <span>Ver todos os planos de assinatura</span>
+              <ArrowRight className="w-4 h-4 ml-2 text-white/95 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
 

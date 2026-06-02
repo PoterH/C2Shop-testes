@@ -48,6 +48,14 @@ export const FAQPage: React.FC = () => {
     {
       q: 'Posso realizar a compra diretamente pelo WhatsApp?',
       a: 'Sim! Caso prefira sanar dúvidas específicas sobre requisitos mínimos de sistema antes de fechar a compra, nossa equipe de vendas poderá te guiar e finalizar o processo via chat.'
+    },
+    {
+      q: 'Como funcionam os planos de assinatura mensal?',
+      a: 'Para softwares específicos (como Canva Pro e CapCut Pro), oferecemos opções de assinatura mensal exclusiva via Pix. O acesso é válido por 30 dias com renovação a cada mês.'
+    },
+    {
+      q: 'O que recebo ao assinar um plano mensal?',
+      a: 'Ao adquirir uma assinatura, você receberá credenciais de login e senha oficiais no seu e-mail de compra para logar diretamente na ferramenta. Para garantir a segurança e evitar lotação de acessos simultâneos na mesma conta, trocamos/atualizamos as senhas periodicamente e enviamos a você as novas credenciais.'
     }
   ];
 

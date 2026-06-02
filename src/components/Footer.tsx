@@ -168,6 +168,142 @@ export const Footer: React.FC = () => {
 
           </div>
 
+          {/* Payment Methods & Security Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 my-8 pt-8 border-t border-slate-800/60">
+            {/* Left: Payment Methods */}
+            <div className="space-y-3 text-center lg:text-left">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-sans">
+                Meios de Pagamento
+              </span>
+              <div className="flex flex-wrap gap-2.5 justify-center lg:justify-start items-center">
+                {/* Pix */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1 hover:scale-105 transition-all duration-200 shadow-sm" title="Pix">
+                  <svg viewBox="0 0 72 32" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(8, 3)">
+                      <path d="M13.2 2.1c-.2-.2-.5-.2-.7 0L7.3 7.3c-.3.3-.3.8 0 1.1l5.2 5.2c.2.2.5.2.7 0l5.2-5.2c.3-.3.3-.8 0-1.1L13.2 2.1zm-6.8 6.8c-.2-.2-.5-.2-.7 0L.5 14.1c-.3.3-.3.8 0 1.1l5.2 5.2c.2.2.5.2.7 0l5.2-5.2c.3-.3.3-.8 0-1.1l-5.2-5.2zm13.6 0c-.2-.2-.5-.2-.7 0l-5.2 5.2c-.3.3-.3.8 0 1.1l5.2 5.2c.2.2.5.2.7 0l5.2-5.2c.3-.3.3-.8 0-1.1l-5.2-5.2zm-6.8 6.8c-.2-.2-.5-.2-.7 0l-5.2 5.2c-.3.3-.3.8 0 1.1l5.2 5.2c.2.2.5.2.7 0l5.2-5.2c.3-.3.3-.8 0-1.1l-5.2-5.2z" fill="#32BCAD" />
+                      <text x="30" y="19" fill="#32BCAD" fontFamily="sans-serif" fontWeight="950" fontSize="17.5" letterSpacing="0.2">pix</text>
+                    </g>
+                  </svg>
+                </div>
+                {/* Mastercard */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1 hover:scale-105 transition-all duration-200 shadow-sm" title="Mastercard">
+                  <svg viewBox="0 0 85 50" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="28" cy="25" r="21" fill="#FF1E00" />
+                    <circle cx="56" cy="25" r="21" fill="#FF9900" />
+                    <g fill="#FF5F00">
+                      <path d="M 42 7 A 21 21 0 0 1 42 43 A 21 21 0 0 1 42 7 Z" opacity="0.4"/>
+                    </g>
+                    <text x="42" y="29" fill="#FFFFFF" fontFamily="Impact, Arial Black, sans-serif" fontWeight="bold" fontStyle="italic" fontSize="9.5" textAnchor="middle" stroke="#000000" strokeWidth="1.2" paintOrder="stroke fill">MasterCard</text>
+                  </svg>
+                </div>
+                {/* Visa */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1 hover:scale-105 transition-all duration-200 shadow-sm" title="Visa">
+                  <svg viewBox="0 0 100 32" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="skewX(-12) translate(10, 0)">
+                      <path d="M5 6 L18 6 L12 18 L2 18 Z" fill="#F7A21C" />
+                      <text x="14" y="26" fill="#0E4595" fontFamily="sans-serif" fontWeight="950" fontSize="26" fontStyle="italic" letterSpacing="-1.5">VISA</text>
+                    </g>
+                  </svg>
+                </div>
+                {/* Amex */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1.5 hover:scale-105 transition-all duration-200 shadow-sm" title="American Express">
+                  <svg viewBox="0 0 50 50" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="50" height="50" rx="3" fill="#0077A6" />
+                    <text x="25" y="18" fill="#FFFFFF" fontFamily="sans-serif" fontWeight="900" fontSize="5.5" textAnchor="middle" letterSpacing="0.2">AMERICAN</text>
+                    <text x="25" y="28" fill="#FFFFFF" fontFamily="sans-serif" fontWeight="950" fontSize="7.5" textAnchor="middle" letterSpacing="0.4">EXPRESS</text>
+                    <circle cx="6" cy="41" r="1.2" fill="none" stroke="#FFFFFF" strokeWidth="0.4"/>
+                    <text x="6" y="42.2" fill="#FFFFFF" fontFamily="sans-serif" fontSize="2" textAnchor="middle" fontWeight="bold">R</text>
+                  </svg>
+                </div>
+                {/* PayPal */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1 hover:scale-105 transition-all duration-200 shadow-sm" title="PayPal">
+                  <svg viewBox="0 0 110 32" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="skewX(-12) translate(8, 0)">
+                      <g transform="translate(0, 2)">
+                        <path d="M7.5 2 L1.5 25 L6.5 25 L7.8 19 L11.5 19 C15 19 17.5 17 18.2 13 C18.9 9 16.5 6 12 6 H7.5 L7.5 2 Z" fill="#003087" />
+                        <path d="M11 7 L5 30 L10 30 L11.3 24 L15 24 C18.5 24 21 22 21.7 18 C22.4 14 20 11 15.5 11 H11 L11 7 Z" fill="#0079C1" opacity="0.9" />
+                      </g>
+                      <text x="26" y="24" fill="#003087" fontFamily="sans-serif" fontWeight="950" fontStyle="italic" fontSize="19" letterSpacing="-0.8">Pay</text>
+                      <text x="59" y="24" fill="#0079C1" fontFamily="sans-serif" fontWeight="950" fontStyle="italic" fontSize="19" letterSpacing="-0.8">Pal</text>
+                    </g>
+                  </svg>
+                </div>
+                {/* Hipercard */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1 hover:scale-105 transition-all duration-200 shadow-sm" title="Hipercard">
+                  <svg viewBox="0 0 120 45" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="6" width="100" height="33" rx="6" fill="#B0101A" transform="skewX(-14)" />
+                    <text x="58" y="27" fill="#FFFFFF" fontFamily="sans-serif" fontWeight="950" fontStyle="italic" fontSize="14" textAnchor="middle" letterSpacing="-0.5">Hipercard</text>
+                  </svg>
+                </div>
+                {/* Elo */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1 hover:scale-105 transition-all duration-200 shadow-sm" title="Elo">
+                  <svg viewBox="0 0 50 50" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="23" fill="#111111" />
+                    <text x="14" y="32" fill="#FFFFFF" fontFamily="sans-serif" fontWeight="900" fontSize="16" letterSpacing="-0.5">el</text>
+                    <g transform="translate(34, 25) scale(0.7)">
+                      <path d="M -8 -3 A 9 9 0 0 1 3 -9" fill="none" stroke="#E21B26" strokeWidth="4" strokeLinecap="round"/>
+                      <path d="M 5 -6 A 9 9 0 0 1 8 5" fill="none" stroke="#00A2E2" strokeWidth="4" strokeLinecap="round"/>
+                      <path d="M 6 8 A 9 9 0 0 1 -7 5" fill="none" stroke="#F4A21A" strokeWidth="4" strokeLinecap="round"/>
+                    </g>
+                  </svg>
+                </div>
+                {/* Boleto */}
+                <div className="h-8 w-14 bg-white rounded-lg border border-slate-200/50 flex items-center justify-center p-1 hover:scale-105 transition-all duration-200 shadow-sm" title="Boleto Bancário">
+                  <svg viewBox="0 0 65 50" className="h-full w-full object-contain" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(8, 6) scale(0.7)">
+                      <rect x="0" y="0" width="6" height="32" fill="#000" />
+                      <rect x="9" y="0" width="2" height="32" fill="#000" />
+                      <rect x="13" y="0" width="8" height="32" fill="#000" />
+                      <rect x="24" y="0" width="3" height="32" fill="#000" />
+                      <rect x="30" y="0" width="6" height="32" fill="#000" />
+                      <rect x="39" y="0" width="2" height="32" fill="#000" />
+                      <rect x="43" y="0" width="8" height="32" fill="#000" />
+                      <rect x="54" y="0" width="3" height="32" fill="#000" />
+                      <rect x="60" y="0" width="6" height="32" fill="#000" />
+                    </g>
+                    <text x="32.5" y="36" fill="#000000" fontFamily="sans-serif" fontWeight="900" fontSize="6.5" textAnchor="middle" letterSpacing="-0.1">Boleto</text>
+                    <text x="32.5" y="43" fill="#000000" fontFamily="sans-serif" fontWeight="900" fontSize="6.5" textAnchor="middle" letterSpacing="-0.1">Bancário</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Security Certificates */}
+            <div className="space-y-3 text-center lg:text-right">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-sans">
+                Segurança
+              </span>
+              <div className="flex flex-wrap gap-4 justify-center lg:justify-end items-center">
+                {/* Selo Compra 100% Segura */}
+                <div className="flex items-center space-x-2.5 bg-slate-900/40 border border-emerald-500/20 rounded-2xl px-4 py-2 hover:border-emerald-500/40 transition-colors shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                    <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[9px] font-extrabold text-white leading-tight uppercase tracking-wider">Compra 100% Segura</p>
+                    <p className="text-[8px] text-slate-450 text-slate-400 leading-none">Criptografia SSL (HTTPS)</p>
+                  </div>
+                </div>
+
+                {/* Selo Loja Protegida */}
+                <div className="flex items-center space-x-2.5 bg-slate-900/40 border border-sky-500/20 rounded-2xl px-4 py-2 hover:border-sky-500/40 transition-colors shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400">
+                    <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[9px] font-extrabold text-white leading-tight uppercase tracking-wider">Loja Protegida</p>
+                    <p className="text-[8px] text-slate-450 text-slate-400 leading-none">Ambiente 100% Seguro</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Separator */}
           <hr className="border-slate-800/60 my-10" />
 

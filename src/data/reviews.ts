@@ -744,6 +744,98 @@ export const reviewsData: Record<string, Review[]> = {
       comment: "o programa é muito bom e roda liso. Apenas o download que demorou um pouco por ser pesado."
     }
   ],
+  illustrator_2026: [
+    {
+      author: "Guilherme S.",
+      rating: 5,
+      date: "Ontem",
+      comment: "Illustrator 2026 rodando muito rápido no Windows 11. Criei várias artes vetorizadas pesadas e não travou nenhuma vez."
+    },
+    {
+      author: "Camila Nogueira",
+      rating: 5,
+      date: "4 dias atrás",
+      comment: "Excelente para trabalhar com design gráfico local. A ativação vitalícia sem assinatura mensal economiza muito no ano."
+    },
+    {
+      author: "Fabio D.",
+      rating: 4,
+      date: "1 semana atrás",
+      comment: "Gostei muito da estabilidade dessa versão. Suporte foi super atencioso e me ajudou na instalação rápida."
+    },
+    {
+      author: "Lucas B. Martins",
+      rating: 5,
+      date: "2 semanas atrás",
+      comment: "Excelente alternativa de compra vitalícia local. O Illustrator é super completo e sem surpresas."
+    }
+  ],
+  premiere_2026: [
+    {
+      author: "Matheus V. Costa",
+      rating: 5,
+      date: "Ontem",
+      comment: "Muito bom! Premiere 2026 com excelente desempenho de renderização por GPU. Editei em 4K sem engasgos."
+    },
+    {
+      author: "Larissa Dias",
+      rating: 5,
+      date: "3 dias atrás",
+      comment: "Entrega super rápida do link de download e instruções simples de instalar. Recomendo demais!"
+    },
+    {
+      author: "Tiago Silva",
+      rating: 4,
+      date: "1 semana atrás",
+      comment: "O programa é ótimo e completo. O download é um pouco pesado, mas a velocidade de resposta do editor compensa."
+    },
+    {
+      author: "Gabriel Nogueira",
+      rating: 5,
+      date: "2 semanas atrás",
+      comment: "Melhor editor do mercado. Comprei e já estou editando meus trabalhos locais."
+    },
+    {
+      author: "Mariana Santos",
+      rating: 5,
+      date: "3 semanas atrás",
+      comment: "Muito fácil de ativar seguindo o tutorial enviado. Aprovou na hora por Pix."
+    }
+  ],
+  after_effects_2026: [
+    {
+      author: "Bruno M. Ramos",
+      rating: 5,
+      date: "Ontem",
+      comment: "After Effects 2026 incrível. Renderizei animações complexas e o consumo de RAM está bem otimizado comparado à versão anterior."
+    },
+    {
+      author: "Marina P.",
+      rating: 4,
+      date: "5 dias atrás",
+      comment: "Comprei para o meu estúdio e ativou de primeira. Suporte por WhatsApp tirou minhas dúvidas de compatibilidade rapidamente."
+    }
+  ],
+  lightroom_classic_2026: [
+    {
+      author: "Rodrigo F. Lima",
+      rating: 5,
+      date: "Ontem",
+      comment: "Lightroom Classic 2026 perfeito para importar grandes catálogos de fotos RAW. A revelação de imagens está muito fluida."
+    },
+    {
+      author: "Debora L. Gomes",
+      rating: 5,
+      date: "2 dias atrás",
+      comment: "Sensacional! Edição profissional de fotos sem pagar mensalidades absurdas. O processo de compra foi muito seguro."
+    },
+    {
+      author: "Vinicius Souza",
+      rating: 4,
+      date: "1 semana atrás",
+      comment: "Excelente custo-benefício. Recomendo para fotógrafos profissionais que querem usar a versão local estável."
+    }
+  ],
   proteus_9: [
     {
       author: "Jefferson Santos",
@@ -850,6 +942,116 @@ export const reviewsData: Record<string, Review[]> = {
       rating: 5,
       date: "1 semana atrás",
       comment: "O OCR dele funcionou perfeitamente para digitalizar uns documentos antigos escaneados que eu tinha. Recomendo demais!"
+    }
+  ],
+  wondershare_recoverit_13: [
+    {
+      author: "Felipe S. Pires",
+      rating: 5,
+      date: "3 dias atrás",
+      comment: "Salvou minha vida! Consegui recuperar mais de 200GB de fotos e vídeos de um HD externo que tinha sido formatado por engano. Funcionou perfeito!"
+    }
+  ],
+  capcut_pro_mensal: [
+    {
+      author: "Lucas F. Rocha",
+      rating: 5,
+      date: "2 dias atrás",
+      comment: "Assinei o CapCut Pro pra editar meus Reels. A entrega do login e senha foi na hora no e-mail e ativou tudo certinho no meu app de PC. Os recursos de IA ajudam muito a legendar os vídeos rápido!"
+    },
+    {
+      author: "Mariana Santos",
+      rating: 5,
+      date: "5 dias atrás",
+      comment: "Estava cansada da versão gratuita com marca d'água e limitações. Essa assinatura no Pix cabe no bolso e funciona muito bem, recomendo demais!"
+    },
+    {
+      author: "Thiago N. Ramos",
+      rating: 5,
+      date: "1 semana atrás",
+      comment: "Tudo certo. O envio das credenciais foi bem rápido e o suporte explicou como funciona a rotação das contas. Roda liso no meu Mac e no PC."
+    },
+    {
+      author: "Caroline Albuquerque",
+      rating: 4,
+      date: "2 semanas atrás",
+      comment: "Muito bom! Editor completo, o áudio de IA é incrível. Apenas tive uma dúvida para logar na conta compartilhada de início, mas o suporte respondeu rápido no WhatsApp."
+    },
+    {
+      author: "Felipe G. Dias",
+      rating: 5,
+      date: "3 semanas atrás",
+      comment: "Perfeito para criadores de conteúdo. Todos os stickers, efeitos e transições liberados. Custo-benefício excelente pelo Pix!"
+    }
+  ],
+  canva_pro_mensal: [
+    {
+      author: "Juliana K. Costa",
+      rating: 5,
+      date: "Ontem",
+      comment: "Assinei o Canva Pro e liberou tudo na mesma hora! Consigo usar todas as fotos, remover fundo com 1 clique e criar os kits de marca para os meus clientes de social media. Muito prático."
+    },
+    {
+      author: "Rodrigo P. Martins",
+      rating: 5,
+      date: "3 dias atrás",
+      comment: "Excelente! A entrega do acesso é muito rápida. O valor do Pix recorrente compensa demais para quem usa todo dia para trabalhar."
+    },
+    {
+      author: "Carla R. Pontes",
+      rating: 5,
+      date: "1 semana atrás",
+      comment: "Ótimo atendimento e suporte no WhatsApp. Explicaram direitinho como funciona a conta Pro e já estou criando minhas apresentações da empresa. Recomendo!"
+    },
+    {
+      author: "Beatriz Nogueira",
+      rating: 4,
+      date: "1 semana atrás",
+      comment: "Gostei bastante, acesso rápido a todos os templates e fotos premium. Só tive que configurar meu kit de marca de novo, mas fora isso é maravilhoso."
+    },
+    {
+      author: "Guilherme B. Silva",
+      rating: 5,
+      date: "2 semanas atrás",
+      comment: "Perfeito, liberação automática no e-mail logo após pagar o Pix. Vale muito a pena pelo preço cobrado."
+    },
+    {
+      author: "Ana Julia M.",
+      rating: 5,
+      date: "3 semanas atrás",
+      comment: "Maravilhoso! Canva Pro é essencial hoje em dia. Esse plano por assinatura no Pix foi a melhor alternativa que encontrei. Recomendo muito a C2Tech."
+    },
+    {
+      author: "Marcelo A. Rocha",
+      rating: 4,
+      date: "1 mês atrás",
+      comment: "Muito prático o kit de marca e o redimensionador automático de designs. Aprovou o Pix na hora."
+    }
+  ],
+  autodesk_all_apps: [
+    {
+      author: "Ricardo Albuquerque",
+      rating: 5,
+      date: "Ontem",
+      comment: "Sensacional! Liberação foi muito rápida no meu e-mail. Entrei em contato com o suporte pelo WhatsApp, me passaram o login e senha privados e já estou usando o AutoCAD e o Revit originais. Vale muito a pena!"
+    },
+    {
+      author: "Sofia Helena M.",
+      rating: 5,
+      date: "3 dias atrás",
+      comment: "Uso no meu escritório de arquitetura e me economizou um dinheirão. Todos os 86 programas da Autodesk estão inclusos na conta. Atualizações oficiais acontecem direto nas ferramentas. O plano recorrente no Pix é super prático."
+    },
+    {
+      author: "Eng. Daniel Farias",
+      rating: 5,
+      date: "1 semana atrás",
+      comment: "Trabalho com projetos complexos no Inventor e Civil 3D, e o acesso original é fundamental. A conta é 100% privada e o suporte deles é sensacional, tirou minhas dúvidas de login pelo zap muito rápido. Excelente!"
+    },
+    {
+      author: "Gabriela Vasconcelos",
+      rating: 4,
+      date: "2 semanas atrás",
+      comment: "Muito bom ter todas as ferramentas em uma só assinatura. O processo de pegar o login com o suporte foi tranquilo. Recomendo para engenheiros e arquitetos."
     }
   ]
 };

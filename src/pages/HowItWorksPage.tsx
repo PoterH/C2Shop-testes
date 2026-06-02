@@ -6,23 +6,23 @@ export const HowItWorksPage: React.FC = () => {
   const steps = [
     {
       icon: <ShoppingBag className="w-8 h-8 text-sky-600" />,
-      title: '1. Escolha o Software',
-      desc: 'Navegue pelo nosso catálogo completo contendo as principais soluções profissionais de engenharia, arquitetura, design e produtividade do mercado. Escolha a versão adequada ao seu sistema operacional (Windows ou macOS).'
+      title: '1. Escolha o Produto',
+      desc: 'Navegue pelo nosso catálogo completo contendo Licenças Vitalícias profissionais (engenharia, arquitetura, escritório) ou Planos de Assinatura Mensal (design, criatividade). Escolha a opção correspondente ao seu caso.'
     },
     {
       icon: <CreditCard className="w-8 h-8 text-emerald-600" />,
       title: '2. Finalize o Pedido',
-      desc: 'Adicione o produto ao carrinho e finalize a compra de forma ágil e segura em nosso checkout protegido por criptografia SSL. Você pode efetuar o pagamento via Pix (aprovação imediata) ou Cartão de Crédito.'
+      desc: 'Finalize a compra com segurança criptografada em nosso checkout. Você pode efetuar o pagamento via Pix ou Cartão de Crédito (nota: as assinaturas mensais recorrentes são processadas exclusivamente via Pix).'
     },
     {
       icon: <Mail className="w-8 h-8 text-sky-600" />,
       title: '3. Receba no E-mail',
-      desc: 'Segundos após a confirmação do pagamento, nosso sistema envia automaticamente um e-mail contendo os links de download direto dos arquivos e um tutorial passo a passo ilustrado extremamente simples de seguir.'
+      desc: 'Após a aprovação do pagamento, você recebe imediatamente as instruções no seu e-mail: links de download com tutoriais para licenças vitalícias, ou credenciais de login e senha oficiais para assinaturas mensais.'
     },
     {
       icon: <Settings className="w-8 h-8 text-emerald-600" />,
-      title: '4. Instalação e Pronto para Uso',
-      desc: 'Baixe os arquivos e siga o tutorial de instalação para obter a versão completa e funcional do software com acesso vitalício. Caso surja qualquer dúvida, nossa equipe de suporte remoto estará pronta para auxiliar.'
+      title: '4. Instalação ou Login Oficial',
+      desc: 'Baixe e instale o software localmente ou faça o login oficial na plataforma com os dados recebidos. Caso surja qualquer dúvida, nossa equipe de suporte assistido estará de prontidão no WhatsApp.'
     }
   ];
 

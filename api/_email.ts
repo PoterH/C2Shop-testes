@@ -102,29 +102,38 @@ export async function sendConfirmationEmail({
   // Generate dynamic download buttons
   const downloadButtonsSection = checkoutProducts.map(p => {
     const downloadUrl = getDownloadLink(p.slug);
+    const isWhatsApp = downloadUrl.includes('wa.me');
+    const buttonText = isWhatsApp ? 'Entrar em Contato (Ativar Conta)' : 'Acessar Google Drive (Download)';
+    const headerText = isWhatsApp ? `Ativação de Conta: ${p.name}` : p.name;
+    const buttonBg = isWhatsApp ? '#25d366' : '#0284c7';
     return `
       <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 16px 0; text-align: center;">
-        <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px; font-weight: bold;">${p.name}</h4>
-        <a href="${downloadUrl}" target="_blank" style="display: inline-block; background-color: #0284c7; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; border: 1px solid #0284c7; min-width: 200px; box-shadow: 0 4px 6px rgba(2, 132, 199, 0.15);"><span style="color: #ffffff; font-weight: bold; text-decoration: none;">Acessar Google Drive (Download)</span></a>
+        <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px; font-weight: bold;">${headerText}</h4>
+        <a href="${downloadUrl}" target="_blank" style="display: inline-block; background-color: ${buttonBg}; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; border: 1px solid ${buttonBg}; min-width: 200px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);"><span style="color: #ffffff; font-weight: bold; text-decoration: none;">${buttonText}</span></a>
       </div>
     `;
   }).join('');
+
+  const hasSubscription = checkoutProducts.some(p => p.slug === 'capcut-pro-mensal' || p.slug === 'canva-pro-mensal' || p.slug === 'autodesk-all-apps');
+  const emailIntroText = hasSubscription
+    ? 'O seu pagamento foi confirmado! Abaixo estão liberadas as instruções e links para ativar a sua assinatura e acessar os recursos Pro de cada um dos seus produtos adquiridos.'
+    : 'O seu pagamento foi confirmado! Abaixo estão liberados os links de acesso seguro ao Google Drive contendo todos os arquivos necessários para a instalação, ativação e o tutorial em vídeo passo a passo de cada um dos seus produtos adquiridos.';
 
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
       <meta charset="UTF-8">
-      <title>Entrega de Software C2Tech</title>
+      <title>Entrega de Pedido C2Shop</title>
     </head>
     <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 0;">
       <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="background-color: #020617; padding: 32px; text-align: center; border-bottom: 4px solid #0284c7;">
-          <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 1px;">C2<span style="color: #0284c7;">Tech</span></div>
+          <div style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 1px;">C2<span style="color: #0284c7;">Shop</span></div>
         </div>
         <div style="padding: 40px;">
           <h1 style="font-size: 22px; color: #0f172a; margin-top: 0; font-weight: bold;">Olá, ${buyerName}!</h1>
-          <p style="font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 24px;">O seu pagamento foi confirmado! Abaixo estão liberados os links de acesso seguro ao Google Drive contendo todos os arquivos necessários para a instalação, ativação e o tutorial em vídeo passo a passo de cada um dos seus produtos adquiridos.</p>
+          <p style="font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 24px;">${emailIntroText}</p>
 
           <h2 style="font-size: 16px; color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-top: 32px; margin-bottom: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Detalhes do Pedido</h2>
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">

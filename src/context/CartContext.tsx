@@ -9,7 +9,7 @@ interface CartContextType {
   discountAmount: number;
   total: number;
   discountPercentage: number;
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, subOption?: 'recurrent' | 'avulso') => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   setIsCartOpen: (isOpen: boolean) => void;
@@ -62,14 +62,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [couponCode]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, subOption?: 'recurrent' | 'avulso') => {
     if (product.unavailable) return;
     
     setCartItems((prev) => {
       // Check if already in cart
       const exists = prev.find((item) => item.id === product.id);
-      if (exists) return prev;
-      return [...prev, product];
+      if (exists) {
+        return prev.map((item) => 
+          item.id === product.id 
+            ? { ...item, selectedSubOption: subOption || item.selectedSubOption || 'recurrent' }
+            : item
+        );
+      }
+      return [...prev, { ...product, selectedSubOption: subOption || 'recurrent' }];
     });
     
     // Automatically open the cart drawer
@@ -106,7 +112,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Math calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
+  const subtotal = cartItems.reduce((sum, item) => {
+    if (item.isSubscription) {
+      const isRecurrent = item.selectedSubOption !== 'avulso';
+      return sum + (isRecurrent ? (item.recurrencePrice || item.price) : item.price);
+    }
+    return sum + item.price;
+  }, 0);
   
   // Coupon OFF10 only applies when items count > 1
   const discountPercentage = (couponCode === 'OFF10' && cartItems.length > 1) ? 10 : 0;
