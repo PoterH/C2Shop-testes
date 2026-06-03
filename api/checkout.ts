@@ -299,28 +299,13 @@ export default async function handler(req: any, res: any) {
           external_reference: externalRef,
           description: 'Servicos de Tecnologia C2Tech',
           items: matchedProducts.map(p => ({
-            id: p.slug,
             title: p.name,
             description: p.name,
             picture_url: `https://c2tech.shop${p.image}`,
             category_id: 'electronics',
             quantity: 1,
-            unit_price: Number(p.price.toFixed(2))
+            unit_price: p.price.toFixed(2)
           })),
-          additional_info: {
-            shipments: {
-              receivers_address: {
-                zip_code: billingAddress?.zipCode?.replace(/\D/g, '') || '01310100',
-                state_name: billingAddress?.state || 'SP',
-                city_name: billingAddress?.city || 'São Paulo',
-                street_name: billingAddress?.street || 'Avenida Paulista',
-                street_number: billingAddress?.number || '1000'
-              }
-            },
-            payer: {
-              registration_date: new Date().toISOString()
-            }
-          },
           transactions: {
             payments: [
               {
@@ -438,28 +423,13 @@ export default async function handler(req: any, res: any) {
         description: 'Servicos de Tecnologia C2Tech',
         external_reference: externalRef,
         items: matchedProducts.map(p => ({
-          id: p.slug,
           title: p.name,
           description: p.name,
           picture_url: `https://c2tech.shop${p.image}`,
           category_id: 'electronics',
           quantity: 1,
-          unit_price: Number(p.price.toFixed(2))
+          unit_price: p.price.toFixed(2)
         })),
-        additional_info: {
-          shipments: {
-            receivers_address: {
-              zip_code: billingAddress?.zipCode?.replace(/\D/g, '') || '01310100',
-              state_name: billingAddress?.state || 'SP',
-              city_name: billingAddress?.city || 'São Paulo',
-              street_name: billingAddress?.street || 'Avenida Paulista',
-              street_number: billingAddress?.number || '1000'
-            }
-          },
-          payer: {
-            registration_date: new Date().toISOString()
-          }
-        },
         transactions: {
           payments: [
             {
