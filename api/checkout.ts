@@ -1,7 +1,7 @@
 import { products } from './_products.js';
 import { getEfiInstance, isMockMode } from './_efi.js';
 import { sendConfirmationEmail } from './_email.js';
-import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago';
+import { MercadoPagoConfig, Payment, PreApproval, Order } from 'mercadopago';
 
 export default async function handler(req: any, res: any) {
   // CORS configuration for local development
@@ -283,7 +283,6 @@ export default async function handler(req: any, res: any) {
         });
       } else {
         // 2B. COBRANÇA AVULSA (CARTÃO DE CRÉDITO) - VIA ORDERS API
-        const { Order } = require('mercadopago');
         const orderClient = new Order(client);
 
         let allowedInstallments = Number(installments) || 1;
@@ -427,7 +426,6 @@ export default async function handler(req: any, res: any) {
       }
 
       const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-      const { Order } = require('mercadopago');
       const orderClient = new Order(client);
 
       const cardPrice = finalTotal;
