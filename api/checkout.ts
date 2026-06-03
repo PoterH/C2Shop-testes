@@ -17,11 +17,6 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  // Helper to determine if Mercado Pago is in Mock Mode
-  const isMercadoPagoMockMode = () => {
-    const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
-    return !token || token.startsWith('YOUR_') || token.includes('SEU_TOKEN') || token === 'mock';
-  };
 
   const { 
     productSlug, 
@@ -221,30 +216,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // 2. PROCESSO DE PAGAMENTO CARTÃO DE CRÉDITO (MERCADO PAGO TRANSPARENTE)
+  // 2. PROCESSO DE PAGAMENTO CARTÃO DE CRÉDITO (MERCADO PAGO TRANSPARENTE VIA ORDERS)
   if (paymentMethod === 'credit_card' || paymentMethod === 'card') {
-    if (isMercadoPagoMockMode()) {
-      console.warn('Mercado Pago API: Iniciando em modo MOCK. Nenhuma credencial de produção configurada no .env.');
-      try {
-        await sendConfirmationEmail({
-          buyerName: buyer.name,
-          buyerEmail: buyer.email,
-          products: matchedProducts.map(p => ({ slug: p.slug, name: p.name, price: p.price })),
-          orderId: 'mock_mp_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-          paymentMethod: 'credit_card'
-        });
-      } catch (err) {
-        console.error('Erro ao enviar e-mail mockado de cartão (Mercado Pago):', err);
-      }
-
-      return res.status(200).json({
-        success: true,
-        paymentMethod: 'credit_card',
-        status: 'approved',
-        mock: true,
-      });
-    }
-
     const token = card?.token || paymentToken;
     let methodId = paymentMethodId || card?.brand || 'visa';
     if (methodId === 'mastercard') {
@@ -262,18 +235,17 @@ export default async function handler(req: any, res: any) {
       }
 
       const cardPrice = finalTotal;
+      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
 
       // 2A. ASSINATURA RECORRENTE VIA MERCADO PAGO PREAPPROVAL
       if (isSubPayment) {
-        const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
         const preApproval = new PreApproval(client);
-
         const backUrl = `https://${req.headers.host || 'c2tech.shop'}/obrigado`;
 
         const preApprovalBody = {
           payer_email: buyer.email,
           card_token_id: token,
-          reason: 'Servicos de Tecnologia C2Tech', // Generic description to prevent account suspension
+          reason: 'Servicos de Tecnologia C2Tech',
           external_reference: 'sub_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
           status: 'authorized',
           auto_recurring: {
@@ -285,9 +257,7 @@ export default async function handler(req: any, res: any) {
           back_url: backUrl
         };
 
-        // Set meliSessionId (Device Fingerprinting) on request options to reduce fraud blocks
         const requestOptions = deviceId ? { meliSessionId: deviceId } : undefined;
-
         const subRes = await preApproval.create({ body: preApprovalBody, requestOptions });
         const status = subRes.status || 'authorized';
 
@@ -308,25 +278,64 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({
           success: true,
           paymentMethod: 'credit_card',
-          status: 'approved', // Return approved to frontend to trigger success screen
+          status: 'approved',
           orderId: String(subRes.id)
         });
       } else {
-        // 2B. COBRANÇA AVULSA PADRÃO (CARTÃO DE CRÉDITO)
-        const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-        const payment = new Payment(client);
+        // 2B. COBRANÇA AVULSA (CARTÃO DE CRÉDITO) - VIA ORDERS API
+        const { Order } = require('mercadopago');
+        const orderClient = new Order(client);
 
         let allowedInstallments = Number(installments) || 1;
         if (cardPrice < 90 && allowedInstallments > 3) {
           allowedInstallments = 3;
         }
 
-        const paymentBody = {
-          transaction_amount: Number(cardPrice.toFixed(2)),
-          token: token,
-          description: 'Servicos de Tecnologia C2Tech', // Generic description to prevent account suspension
-          payment_method_id: methodId,
-          installments: allowedInstallments,
+        const externalRef = 'order_' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        const createOrderBody = {
+          type: 'online',
+          processing_mode: 'manual', // Fix: must use manual for Orders API
+          total_amount: cardPrice.toFixed(2), // Orders API exige string para valores
+          external_reference: externalRef,
+          description: 'Servicos de Tecnologia C2Tech',
+          items: matchedProducts.map(p => ({
+            id: p.slug,
+            title: p.name,
+            description: p.name,
+            picture_url: `https://c2tech.shop${p.image}`,
+            category_id: 'electronics',
+            quantity: 1,
+            unit_price: Number(p.price.toFixed(2))
+          })),
+          additional_info: {
+            shipments: {
+              receivers_address: {
+                zip_code: billingAddress?.zipCode?.replace(/\D/g, '') || '01310100',
+                state_name: billingAddress?.state || 'SP',
+                city_name: billingAddress?.city || 'São Paulo',
+                street_name: billingAddress?.street || 'Avenida Paulista',
+                street_number: billingAddress?.number || '1000'
+              }
+            },
+            payer: {
+              registration_date: new Date().toISOString()
+            }
+          },
+          transactions: {
+            payments: [
+              {
+                amount: cardPrice.toFixed(2), // String
+                payment_method: {
+                  id: methodId,
+                  type: 'credit_card',
+                  token: token,
+                  installments: allowedInstallments,
+                  statement_descriptor: 'C2TECH'
+                }
+              }
+            ]
+          },
           payer: {
             email: buyer.email,
             first_name: buyer.name.trim().split(' ')[0],
@@ -335,6 +344,14 @@ export default async function handler(req: any, res: any) {
               type: buyer.cpf.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF',
               number: buyer.cpf.replace(/\D/g, '')
             },
+            address: {
+              zip_code: billingAddress?.zipCode?.replace(/\D/g, '') || '01310100',
+              street_name: billingAddress?.street || 'Avenida Paulista',
+              street_number: billingAddress?.number || '1000',
+              neighborhood: billingAddress?.neighborhood || 'Bela Vista',
+              city: billingAddress?.city || 'São Paulo',
+              state: billingAddress?.state || 'SP'
+            },
             phone: buyer.phone ? {
               area_code: buyer.phone.replace(/\D/g, '').substring(0, 2),
               number: buyer.phone.replace(/\D/g, '').substring(2)
@@ -342,20 +359,35 @@ export default async function handler(req: any, res: any) {
           }
         };
 
-        // Set meliSessionId (Device Fingerprinting) on request options to reduce fraud blocks
-        const requestOptions = deviceId ? { meliSessionId: deviceId } : undefined;
+        const createRequestOptions = {
+          idempotencyKey: 'idemp_create_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+          ...(deviceId ? { meliSessionId: deviceId } : {})
+        };
 
-        const payRes = await payment.create({ body: paymentBody, requestOptions });
-        const status = payRes.status || 'pending';
+        console.log('Orders API - Order.create() payload:', JSON.stringify(createOrderBody));
 
-        // Se a cobrança de cartão for aprovada/confirmada, dispara o e-mail pelo Resend
-        if (status === 'approved' || status === 'authorized') {
+        // 1. Criar o pedido (Order)
+        const orderRes = await orderClient.create({ body: createOrderBody, requestOptions: createRequestOptions });
+        const orderId = orderRes.id;
+        console.log('Orders API - Order criada com sucesso:', orderId);
+
+        // 2. Processar o pedido
+        const processRequestOptions = {
+          idempotencyKey: 'idemp_process_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+          ...(deviceId ? { meliSessionId: deviceId } : {})
+        };
+        const processRes = await orderClient.process({ id: orderId, requestOptions: processRequestOptions });
+        console.log('Orders API - Order.process() resultado:', JSON.stringify({ id: processRes.id, status: processRes.status, status_detail: processRes.status_detail }));
+
+        const status = processRes.status || 'pending';
+
+        if (status === 'processed' || status === 'approved' || status === 'authorized' || status === 'accredited') {
           try {
             await sendConfirmationEmail({
               buyerName: buyer.name,
               buyerEmail: buyer.email,
               products: matchedProducts.map(p => ({ slug: p.slug, name: p.name, price: p.price })),
-              orderId: String(payRes.id),
+              orderId: String(processRes.id),
               paymentMethod: 'credit_card'
             });
           } catch (err) {
@@ -363,37 +395,31 @@ export default async function handler(req: any, res: any) {
           }
         }
 
-      return res.status(200).json({
-        success: true,
-        paymentMethod: 'credit_card',
-        status,
-        orderId: String(payRes.id)
-      });
+        // Mapear status do Orders API (ex: 'processed'/'accredited') para o frontend entender ('approved')
+        let finalFrontendStatus = status;
+        if (status === 'processed') {
+          finalFrontendStatus = 'approved';
+        }
+
+        return res.status(200).json({
+          success: true,
+          paymentMethod: 'credit_card',
+          status: finalFrontendStatus,
+          orderId: String(processRes.id)
+        });
       }
     } catch (error: any) {
-      console.error('Erro no processamento do checkout Mercado Pago:', error);
+      console.error('Erro no processamento do checkout Mercado Pago (Orders API):', error);
       const errMsg = error.message || error;
       return res.status(500).json({
-        error: 'Erro ao processar o pagamento do cartão de crédito no Mercado Pago',
+        error: 'Erro ao processar o pagamento do cartão de crédito no Mercado Pago via Orders API',
         details: errMsg
       });
     }
   }
   
-  // 3. PROCESSO DE PAGAMENTO BOLETO (MERCADO PAGO)
+  // 3. PROCESSO DE PAGAMENTO BOLETO (MERCADO PAGO VIA ORDERS)
   if (paymentMethod === 'boleto') {
-    if (isMercadoPagoMockMode()) {
-      console.warn('Mercado Pago API (Boleto): Iniciando em modo MOCK.');
-      return res.status(200).json({
-        success: true,
-        paymentMethod: 'boleto',
-        status: 'pending',
-        ticketUrl: 'https://www.mercadopago.com.br/payments/123456789/ticket',
-        barcode: '34191.79001 01043.513184 91020.150008 7 90000000026000',
-        mock: true
-      });
-    }
-
     try {
       const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
       if (!mpAccessToken) {
@@ -401,14 +427,52 @@ export default async function handler(req: any, res: any) {
       }
 
       const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-      const payment = new Payment(client);
+      const { Order } = require('mercadopago');
+      const orderClient = new Order(client);
 
       const cardPrice = finalTotal;
+      const externalRef = 'order_bol_' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-      const paymentBody = {
-        transaction_amount: Number(cardPrice.toFixed(2)),
-        description: 'Servicos de Tecnologia C2Tech', // Generic description to prevent account suspension
-        payment_method_id: 'bolbradesco',
+      const createOrderBody = {
+        type: 'online',
+        processing_mode: 'manual',
+        total_amount: cardPrice.toFixed(2),
+        description: 'Servicos de Tecnologia C2Tech',
+        external_reference: externalRef,
+        items: matchedProducts.map(p => ({
+          id: p.slug,
+          title: p.name,
+          description: p.name,
+          picture_url: `https://c2tech.shop${p.image}`,
+          category_id: 'electronics',
+          quantity: 1,
+          unit_price: Number(p.price.toFixed(2))
+        })),
+        additional_info: {
+          shipments: {
+            receivers_address: {
+              zip_code: billingAddress?.zipCode?.replace(/\D/g, '') || '01310100',
+              state_name: billingAddress?.state || 'SP',
+              city_name: billingAddress?.city || 'São Paulo',
+              street_name: billingAddress?.street || 'Avenida Paulista',
+              street_number: billingAddress?.number || '1000'
+            }
+          },
+          payer: {
+            registration_date: new Date().toISOString()
+          }
+        },
+        transactions: {
+          payments: [
+            {
+              amount: cardPrice.toFixed(2),
+              payment_method: {
+                id: 'bolbradesco',
+                type: 'ticket'
+              }
+            }
+          ]
+        },
         payer: {
           email: buyer.email,
           first_name: buyer.name.trim().split(' ')[0],
@@ -423,30 +487,64 @@ export default async function handler(req: any, res: any) {
             street_number: billingAddress?.number || '1000',
             neighborhood: billingAddress?.neighborhood || 'Bela Vista',
             city: billingAddress?.city || 'São Paulo',
-            federal_unit: billingAddress?.state || 'SP'
-          }
+            state: billingAddress?.state || 'SP'
+          },
+          phone: buyer.phone ? {
+            area_code: buyer.phone.replace(/\D/g, '').substring(0, 2),
+            number: buyer.phone.replace(/\D/g, '').substring(2)
+          } : undefined
         }
       };
 
-      const requestOptions = deviceId ? { meliSessionId: deviceId } : undefined;
-      const payRes = await payment.create({ body: paymentBody, requestOptions });
+      const createRequestOptions = {
+        idempotencyKey: 'idemp_create_bol_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        ...(deviceId ? { meliSessionId: deviceId } : {})
+      };
       
-      const ticketUrl = payRes.transaction_details?.external_resource_url || '';
-      const barcode = payRes.transaction_details?.barcode?.content || '';
+      console.log('Orders API (Boleto) - Order.create() payload:', JSON.stringify(createOrderBody));
+      
+      const orderRes = await orderClient.create({ body: createOrderBody, requestOptions: createRequestOptions });
+      const orderId = orderRes.id;
+      console.log('Orders API (Boleto) - Order criada com sucesso:', orderId);
+
+      // Processar boleto
+      const processRequestOptions = {
+        idempotencyKey: 'idemp_process_bol_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        ...(deviceId ? { meliSessionId: deviceId } : {})
+      };
+      const processRes = await orderClient.process({ id: orderId, requestOptions: processRequestOptions });
+      console.log('Orders API (Boleto) - Order.process() resultado:', JSON.stringify({ id: processRes.id, status: processRes.status, status_detail: processRes.status_detail }));
+
+      // Se for boleto, o processamento devolve os dados em transactions.payments
+      const paymentDetails = processRes.transactions?.payments?.[0];
+      let ticketUrl = paymentDetails?.external_resource_url || paymentDetails?.transaction_data?.ticket_url || '';
+      let barcode = paymentDetails?.barcode?.content || paymentDetails?.transaction_data?.barcode || '';
+
+      if (!ticketUrl && paymentDetails?.id) {
+        const { Payment } = require('mercadopago');
+        const paymentClient = new Payment(client);
+        try {
+          const payData = await paymentClient.get({ id: paymentDetails.id });
+          ticketUrl = payData.transaction_details?.external_resource_url || ticketUrl;
+          barcode = payData.transaction_details?.barcode?.content || barcode;
+        } catch (e) {
+          console.error("Falha ao buscar detalhes do pagamento boleto:", e);
+        }
+      }
 
       return res.status(200).json({
         success: true,
         paymentMethod: 'boleto',
-        status: payRes.status || 'pending',
-        orderId: String(payRes.id),
+        status: processRes.status || 'pending',
+        orderId: String(processRes.id),
         ticketUrl,
         barcode
       });
     } catch (error: any) {
-      console.error('Erro no processamento do checkout Boleto Mercado Pago:', error);
+      console.error('Erro no processamento do checkout Boleto Mercado Pago (Orders API):', error);
       const errMsg = error.message || error;
       return res.status(500).json({
-        error: 'Erro ao gerar o boleto bancário no Mercado Pago',
+        error: 'Erro ao gerar o boleto bancário no Mercado Pago via Orders API',
         details: errMsg
       });
     }
