@@ -484,15 +484,14 @@ export default async function handler(req: any, res: any) {
       console.log('Orders API (Boleto) - Order.process() resultado:', JSON.stringify({ id: processRes.id, status: processRes.status, status_detail: processRes.status_detail }));
 
       // Se for boleto, o processamento devolve os dados em transactions.payments
-      const paymentDetails = processRes.transactions?.payments?.[0];
+      const paymentDetails = processRes.transactions?.payments?.[0] as any;
       let ticketUrl = paymentDetails?.external_resource_url || paymentDetails?.transaction_data?.ticket_url || '';
       let barcode = paymentDetails?.barcode?.content || paymentDetails?.transaction_data?.barcode || '';
 
       if (!ticketUrl && paymentDetails?.id) {
-        const { Payment } = require('mercadopago');
         const paymentClient = new Payment(client);
         try {
-          const payData = await paymentClient.get({ id: paymentDetails.id });
+          const payData = await paymentClient.get({ id: paymentDetails.id }) as any;
           ticketUrl = payData.transaction_details?.external_resource_url || ticketUrl;
           barcode = payData.transaction_details?.barcode?.content || barcode;
         } catch (e) {
